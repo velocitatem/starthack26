@@ -86,3 +86,23 @@ def test_codex_agent_requires_and_applies_pending_approval(monkeypatch):
     final_status = build_status_payload(backend_state.read_state())
     final_faults = final_status["derived"]["buildingStats"]["activeFaults"]
     assert final_faults == initial_faults - 1
+
+
+def test_system_prompt_includes_uploaded_document_context_with_truncation(monkeypatch):
+    monkeypatch.setattr(
+        codex_agent,
+        "get_all_building_document_texts",
+        lambda: [
+            {
+                "filename": "layout.md",
+                "content_text": "Mechanical room above the kitchen.\n" + ("A" * 20_000),
+            }
+        ],
+    )
+
+    prompt = codex_agent._system_prompt()
+
+    assert "Building document context:" in prompt
+    assert "--- layout.md ---" in prompt
+    assert "[truncated]" in prompt
+    assert len(prompt) < 17_000

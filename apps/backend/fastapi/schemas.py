@@ -222,6 +222,18 @@ class MlFailureModeResponse(BaseModel):
     error: str | None = None
 
 
+class DocumentListItem(BaseModel):
+    id: str
+    filename: str
+    status: Literal["processing", "ready", "error"]
+    errorMessage: str | None = None
+    uploadedAt: str
+
+
+class DocumentUploadResponse(DocumentListItem):
+    pass
+
+
 class AgentChatMessage(BaseModel):
     role: Literal["user", "assistant"]
     content: str = Field(min_length=1)

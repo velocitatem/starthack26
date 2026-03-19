@@ -7,7 +7,11 @@ from uuid import uuid4
 
 import requests
 
-from shacklib.backend_state import read_state, update_state
+from shacklib.backend_state import (
+    get_all_building_document_texts,
+    read_state,
+    update_state,
+)
 from shacklib.diagnosis_engine import (
     build_node_fault_history_payload,
     build_status_payload,
@@ -23,6 +27,7 @@ _AGENT_STORE_KEY = "agent"
 _PENDING_ACTIONS_KEY = "pendingActions"
 _AUDIT_LOG_KEY = "auditLog"
 _AUDIT_LOG_LIMIT = 250
+_DOCUMENT_CONTEXT_CHAR_LIMIT = 15_000
 
 _MUTATING_TOOLS = {"resolve_fault"}
 
@@ -51,13 +56,52 @@ def _normalize_actor(raw: Any) -> str:
 
 
 def _system_prompt() -> str:
-    return (
+    base_prompt = (
         "You are Belimo Ops Copilot for HVAC fault diagnostics. "
         "Use tools whenever you need current platform data. "
         "Never invent IDs, metrics, or fault states. "
         "When the user asks to execute an action, call the matching tool. "
         "Keep answers short and operationally useful."
     )
+    document_context = _building_document_context()
+    if not document_context:
+        return base_prompt
+    return f"{base_prompt}\n\nBuilding document context:\n{document_context}"
+
+
+def _building_document_context() -> str:
+    documents = get_all_building_document_texts()
+    if not documents:
+        return ""
+
+    chunks: list[str] = []
+    remaining = _DOCUMENT_CONTEXT_CHAR_LIMIT
+
+    for document in documents:
+        filename = str(document.get("filename") or "document.txt").strip() or "document.txt"
+        content = str(document.get("content_text") or "").strip()
+        if not content:
+            continue
+
+        section = f"--- {filename} ---\n{content}"
+        if len(section) <= remaining:
+            chunks.append(section)
+            remaining -= len(section)
+            if remaining <= 0:
+                break
+            continue
+
+        if remaining <= len(f"--- {filename} ---\n"):
+            break
+
+        trimmed_content_budget = remaining - len(f"--- {filename} ---\n\n[truncated]")
+        if trimmed_content_budget <= 0:
+            break
+
+        chunks.append(f"--- {filename} ---\n{content[:trimmed_content_budget].rstrip()}\n[truncated]")
+        break
+
+    return "\n\n".join(chunks)
 
 
 def _tool_definitions() -> list[dict[str, Any]]:

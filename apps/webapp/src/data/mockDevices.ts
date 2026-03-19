@@ -201,6 +201,14 @@ export interface NodeFaultHistoryResponse {
   faultHistory: NodeFaultHistoryEntry[];
 }
 
+export interface BuildingDocumentListItem {
+  id: string;
+  filename: string;
+  status: 'processing' | 'ready' | 'error';
+  errorMessage: string | null;
+  uploadedAt: string;
+}
+
 const generateTelemetry = (base: number, variance: number, anomaly = false): TelemetryPoint[] => {
   return Array.from({ length: 24 }, (_, i) => ({
     time: `${String(i).padStart(2, '0')}:00`,

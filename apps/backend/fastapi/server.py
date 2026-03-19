@@ -1,13 +1,17 @@
 import os
+import threading
+from uuid import uuid4
 
 import uvicorn
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from schemas import (
     AgentChatRequest,
     AgentChatResponse,
+    DocumentListItem,
+    DocumentUploadResponse,
     IngestPayload,
     IngestResponse,
     MlFailureModeRequest,
@@ -17,7 +21,16 @@ from schemas import (
     ResolveFaultResponse,
     StatusResponse,
 )
-from shacklib.backend_state import ensure_storage_ready, read_state, update_state
+from shacklib.backend_state import (
+    delete_building_document,
+    ensure_storage_ready,
+    insert_building_document,
+    list_building_documents,
+    mark_building_document_failed,
+    read_state,
+    set_building_document_content,
+    update_state,
+)
 from shacklib.codex_agent import run_codex_agent_chat
 from shacklib.diagnosis_engine import (
     build_status_payload,
@@ -34,6 +47,9 @@ from shacklib.ml_inference_client import (
 )
 
 load_dotenv()
+
+ALLOWED_DOCUMENT_EXTENSIONS = {".pdf", ".txt", ".md"}
+MAX_DOCUMENT_BYTES = 10 * 1024 * 1024
 
 app = FastAPI()
 
@@ -57,6 +73,53 @@ async def startup() -> None:
     update_state(seed_mock_state_if_empty)
 
 
+def extract_text(filename: str, data: bytes) -> str:
+    if filename.lower().endswith(".pdf"):
+        import pymupdf
+
+        with pymupdf.open(stream=data, filetype="pdf") as document:
+            return "\n".join(page.get_text("text") for page in document)
+
+    return data.decode("utf-8", errors="replace")
+
+
+def _validate_document_upload(filename: str | None, data: bytes) -> str:
+    name = (filename or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="filename is required")
+
+    extension = os.path.splitext(name)[1].lower()
+    if extension not in ALLOWED_DOCUMENT_EXTENSIONS:
+        allowed = ", ".join(sorted(ALLOWED_DOCUMENT_EXTENSIONS))
+        raise HTTPException(
+            status_code=400,
+            detail=f"unsupported file type; allowed: {allowed}",
+        )
+
+    if len(data) > MAX_DOCUMENT_BYTES:
+        raise HTTPException(status_code=413, detail="file exceeds 10 MB limit")
+
+    return name
+
+
+def _process_uploaded_document(doc_id: str, filename: str, data: bytes) -> None:
+    try:
+        content_text = extract_text(filename, data)
+        set_building_document_content(doc_id, content_text)
+    except Exception as exc:
+        mark_building_document_failed(doc_id, f"failed to extract text: {exc}")
+
+
+def _start_document_processing(doc_id: str, filename: str, data: bytes) -> None:
+    worker = threading.Thread(
+        target=_process_uploaded_document,
+        args=(doc_id, filename, data),
+        daemon=True,
+        name=f"document-upload-{doc_id}",
+    )
+    worker.start()
+
+
 @app.post("/api/ingest", response_model=IngestResponse)
 async def ingest(payload: IngestPayload) -> IngestResponse:
     incoming = payload.model_dump(mode="python")
@@ -70,6 +133,55 @@ async def ingest(payload: IngestPayload) -> IngestResponse:
         )
 
     return update_state(_mutator)
+
+
+@app.post(
+    "/api/documents/upload",
+    response_model=DocumentUploadResponse,
+    status_code=202,
+)
+async def upload_document(file: UploadFile = File(...)) -> DocumentUploadResponse:
+    data = await file.read()
+    filename = _validate_document_upload(file.filename, data)
+    doc_id = f"doc-{uuid4().hex[:12]}"
+
+    inserted = insert_building_document(
+        doc_id=doc_id,
+        filename=filename,
+        content_text="",
+        status="processing",
+    )
+    _start_document_processing(doc_id, filename, data)
+
+    return DocumentUploadResponse(
+        id=inserted["id"],
+        filename=inserted["filename"],
+        status=inserted["status"],
+        errorMessage=inserted["error_message"] or None,
+        uploadedAt=inserted["uploaded_at"],
+    )
+
+
+@app.get("/api/documents", response_model=list[DocumentListItem])
+async def documents() -> list[DocumentListItem]:
+    return [
+        DocumentListItem(
+            id=item["id"],
+            filename=item["filename"],
+            status=item["status"],
+            errorMessage=item["error_message"] or None,
+            uploadedAt=item["uploaded_at"],
+        )
+        for item in list_building_documents()
+    ]
+
+
+@app.delete("/api/documents/{doc_id}")
+async def delete_document(doc_id: str) -> dict[str, bool]:
+    deleted = delete_building_document(doc_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="document not found")
+    return {"ok": True}
 
 
 @app.get("/api/status", response_model=StatusResponse)

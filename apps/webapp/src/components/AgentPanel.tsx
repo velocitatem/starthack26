@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Activity, Bot, Check, Clock3, Loader2, Send, ShieldAlert, Wrench, X } from 'lucide-react';
+import { type ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { Activity, Bot, Check, Clock3, FileText, Loader2, Plus, Send, ShieldAlert, Trash2, Wrench, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { type AgentChatMessage, type AgentToolEvent, type AgentPendingAction, type Device } from '@/data/mockDevices';
 import { useAgentChat } from '@/hooks/useAgentChat';
+import { useDeleteDocument, useDocumentsList, useUploadDocument } from '@/hooks/useBuildingDocuments';
 import { useNodeFaultHistory } from '@/hooks/useNodeFaultHistory';
 
 interface AgentPanelProps {
@@ -115,7 +116,11 @@ const extractMentionContext = (value: string, caretPosition: number): MentionCon
 export default function AgentPanel({ devices }: AgentPanelProps) {
   const agentChat = useAgentChat();
   const inputRef = useRef<HTMLInputElement>(null);
+  const documentInputRef = useRef<HTMLInputElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
+  const documentsQuery = useDocumentsList();
+  const uploadDocumentMutation = useUploadDocument();
+  const deleteDocumentMutation = useDeleteDocument();
 
   const [messages, setMessages] = useState<ConversationMessage[]>([
     {
@@ -407,6 +412,22 @@ export default function AgentPanel({ devices }: AgentPanelProps) {
     );
   };
 
+  const handleDocumentSelect = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+    event.currentTarget.value = '';
+
+    if (!file || uploadDocumentMutation.isPending) {
+      return;
+    }
+
+    uploadDocumentMutation.mutate(file);
+  };
+
+  const documents = documentsQuery.data ?? [];
+  const pendingUploadName = uploadDocumentMutation.isPending
+    ? uploadDocumentMutation.variables?.name ?? 'Uploading document'
+    : null;
+
   return (
     <div className="flex-1 p-6 overflow-hidden flex flex-col">
       <div className="mb-4">
@@ -596,6 +617,78 @@ export default function AgentPanel({ devices }: AgentPanelProps) {
         </div>
       )}
 
+      <input
+        ref={documentInputRef}
+        type="file"
+        accept=".pdf,.txt,.md"
+        onChange={handleDocumentSelect}
+        className="hidden"
+      />
+
+      {(documentsQuery.error instanceof Error
+        || uploadDocumentMutation.error instanceof Error
+        || documents.length > 0
+        || Boolean(pendingUploadName)
+        || documentsQuery.isLoading) && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {documentsQuery.isLoading && documents.length === 0 && (
+            <div className="text-[11px] text-muted-foreground">Loading documents...</div>
+          )}
+
+          {pendingUploadName && (
+            <div className="inline-flex max-w-full items-center gap-1.5 border border-border bg-card px-2.5 py-1 text-[11px] text-muted-foreground">
+              <Loader2 size={11} className="animate-spin" />
+              <span className="truncate">Uploading {pendingUploadName}</span>
+            </div>
+          )}
+
+          {documents.map((document) => (
+            <div
+              key={document.id}
+              className="inline-flex max-w-full items-center gap-2 border border-border bg-card px-2.5 py-1 text-[11px]"
+            >
+              {document.status === 'processing' ? (
+                <Loader2 size={11} className="animate-spin text-muted-foreground" />
+              ) : (
+                <FileText size={11} className="text-muted-foreground" />
+              )}
+              <span className="max-w-[180px] truncate text-foreground">{document.filename}</span>
+              {document.status === 'processing' && (
+                <span className="uppercase tracking-wider text-muted-foreground">
+                  processing
+                </span>
+              )}
+              {document.status === 'error' && (
+                <span className="text-status-fault">
+                  {document.errorMessage ?? 'processing failed'}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => deleteDocumentMutation.mutate(document.id)}
+                disabled={deleteDocumentMutation.isPending}
+                className="text-status-fault disabled:opacity-50"
+                aria-label={`Delete ${document.filename}`}
+              >
+                <Trash2 size={11} />
+              </button>
+            </div>
+          ))}
+
+          {uploadDocumentMutation.error instanceof Error && (
+            <div className="text-[11px] text-status-fault">
+              Upload failed ({uploadDocumentMutation.error.message})
+            </div>
+          )}
+
+          {documentsQuery.error instanceof Error && (
+            <div className="text-[11px] text-status-fault">
+              Could not load documents ({documentsQuery.error.message})
+            </div>
+          )}
+        </div>
+      )}
+
       <form
         className="mt-4 border border-border bg-card p-3 flex items-center gap-2"
         onSubmit={(event) => {
@@ -603,6 +696,16 @@ export default function AgentPanel({ devices }: AgentPanelProps) {
           sendPrompt(input);
         }}
       >
+        <button
+          type="button"
+          onClick={() => documentInputRef.current?.click()}
+          disabled={uploadDocumentMutation.isPending}
+          className="inline-flex h-8 items-center justify-center border border-border px-3 text-[12px] hover:border-foreground transition-colors disabled:opacity-50"
+          aria-label="Upload building document"
+          title="Upload building document"
+        >
+          <Plus size={12} />
+        </button>
         <input
           ref={inputRef}
           value={input}
@@ -649,7 +752,7 @@ export default function AgentPanel({ devices }: AgentPanelProps) {
         <button
           type="submit"
           disabled={agentChat.isPending || !input.trim()}
-          className="inline-flex items-center gap-1.5 border border-border px-3 py-1.5 text-[12px] hover:border-foreground transition-colors disabled:opacity-50"
+          className="inline-flex h-8 items-center gap-1.5 border border-border px-3 text-[12px] hover:border-foreground transition-colors disabled:opacity-50"
         >
           <Send size={12} />
           Send

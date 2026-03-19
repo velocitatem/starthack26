@@ -128,3 +128,35 @@ def test_backend_state_falls_back_to_memory_without_database_url(monkeypatch):
 
     assert backend_state.update_state(_mutator) == "ok"
     assert backend_state.read_state()["meta"]["seedSource"] == "mock"
+
+
+def test_building_document_helpers_work_in_memory_mode(monkeypatch):
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.setattr(backend_state, "_SCHEMA_READY", False)
+    monkeypatch.setattr(backend_state, "_MEMORY_STATE", None)
+
+    inserted = backend_state.insert_building_document(
+        "doc-001",
+        "topology.txt",
+        "AHU-01 serves kitchen and living room.",
+        status="ready",
+    )
+
+    assert inserted["id"] == "doc-001"
+    assert inserted["status"] == "ready"
+
+    documents = backend_state.list_building_documents()
+    assert len(documents) == 1
+    assert documents[0]["filename"] == "topology.txt"
+    assert documents[0]["status"] == "ready"
+
+    prompt_documents = backend_state.get_all_building_document_texts()
+    assert prompt_documents == [
+        {
+            "filename": "topology.txt",
+            "content_text": "AHU-01 serves kitchen and living room.",
+        }
+    ]
+
+    assert backend_state.delete_building_document("doc-001") is True
+    assert backend_state.list_building_documents() == []
