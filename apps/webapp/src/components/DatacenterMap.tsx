@@ -1,7 +1,7 @@
 import { useRef, useState, useCallback, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useGesture } from '@use-gesture/react';
-import { ZoomIn, ZoomOut, Maximize, Play, RotateCcw } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize, Play, RotateCcw, Bug, LoaderCircle } from 'lucide-react';
 import { ModeToggle } from '@/components/mode-toggle';
 import PageHeader from '@/components/PageHeader';
 import { type AHUUnit, type Device, type SimulationFailureInput, type SimulationRunResponse } from '@/types/facility';
@@ -791,6 +791,7 @@ export default function DatacenterMap({
   const [simulationResult, setSimulationResult] = useState<SimulationRunResponse | null>(null);
   const [isPlaybackRunning, setIsPlaybackRunning] = useState(false);
   const [simulationError, setSimulationError] = useState<string | null>(null);
+  const [showSimulationDebug, setShowSimulationDebug] = useState(true);
   const simulationMutation = useSimulationRun();
 
   const simulationTotalSteps = simulationResult?.timeline.timesSeconds.length ?? 0;
@@ -998,6 +999,14 @@ export default function DatacenterMap({
   const zoomIn = () => setTransform((current) => clampTransform(current.x, current.y, current.scale * 1.25));
   const zoomOut = () => setTransform((current) => clampTransform(current.x, current.y, current.scale / 1.25));
   const resetView = () => setTransform({ x: 0, y: 0, scale: 1 });
+  const runSimulationLabel = simulationMutation.isPending
+    ? 'Running backend simulation'
+    : isPlaybackRunning
+      ? `Simulation playing at ${simulationPercent}%`
+      : simulationStep === null
+        ? 'Run simulation'
+        : 'Run simulation again';
+  const simulationDebugLabel = showSimulationDebug ? 'Hide simulation debug' : 'Show simulation debug';
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -1006,31 +1015,61 @@ export default function DatacenterMap({
         subtitle={`Rows A-F · ${devices.length} devices`}
         actions={
           <>
-            <Button
-              size="sm"
-              className="h-8 px-3 text-[11px] font-display"
-              onClick={startSimulation}
-              disabled={simulationMutation.isPending}
-            >
-              <Play size={13} />
-              {simulationMutation.isPending
-                ? 'Running Backend Model...'
-                : isPlaybackRunning
-                  ? `Playing ${simulationPercent}%`
-                  : simulationStep === null
-                    ? 'Run Simulation'
-                    : 'Run Again'}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="icon"
+                  onClick={startSimulation}
+                  disabled={simulationMutation.isPending}
+                  aria-label={runSimulationLabel}
+                  title={runSimulationLabel}
+                >
+                  {simulationMutation.isPending ? <LoaderCircle className="animate-spin" /> : <Play size={16} />}
+                  <span className="sr-only">{runSimulationLabel}</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-[12px] font-display">
+                {runSimulationLabel}
+              </TooltipContent>
+            </Tooltip>
             {simulationStep !== null && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 px-3 text-[11px] font-display"
-                onClick={resetSimulation}
-              >
-                <RotateCcw size={13} />
-                Reset
-              </Button>
+              <>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant={showSimulationDebug ? 'secondary' : 'outline'}
+                      onClick={() => setShowSimulationDebug((current) => !current)}
+                      aria-label={simulationDebugLabel}
+                      aria-pressed={showSimulationDebug}
+                      title={simulationDebugLabel}
+                    >
+                      <Bug size={16} />
+                      <span className="sr-only">{simulationDebugLabel}</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-[12px] font-display">
+                    {simulationDebugLabel}
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      onClick={resetSimulation}
+                      aria-label="Reset simulation"
+                      title="Reset simulation"
+                    >
+                      <RotateCcw size={16} />
+                      <span className="sr-only">Reset simulation</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-[12px] font-display">
+                    Reset simulation
+                  </TooltipContent>
+                </Tooltip>
+              </>
             )}
             <ModeToggle />
           </>
@@ -1066,7 +1105,7 @@ export default function DatacenterMap({
             </button>
           </div>
 
-          {simulationStep !== null && (
+          {simulationStep !== null && showSimulationDebug && (
             <div className="absolute top-3 left-3 z-10 w-[350px] max-w-[calc(100%-120px)] bg-card/95 border border-border rounded-md px-3 py-2 shadow-sm">
               <div className="flex items-center justify-between gap-3 text-[11px] font-display">
                 <span>Backend Multiphysics + Bayesian Simulation</span>
