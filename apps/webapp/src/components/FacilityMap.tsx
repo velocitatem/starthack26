@@ -21,10 +21,41 @@ const statusColor: Record<string, string> = {
   offline: 'var(--status-offline)',
 };
 
-const deviceIcon: Record<string, string> = {
-  actuator: 'A',
-  damper: 'D',
-  valve: 'V',
+const formatAnomalyConfidence = (value: number) => `${Math.round(value * 100)}%`;
+
+// Icons drawn centered on (0,0), fitting within r≈7 — translate to device position via parent <g>
+const DeviceIconSVG = ({ type, color }: { type: string; color: string }) => {
+  switch (type) {
+    case 'actuator': // handwheel — ring + 4 spokes + filled hub
+      return (
+        <g stroke={color} strokeWidth={1.5} strokeLinecap="round">
+          <circle r={5.5} fill="none" />
+          <line x1={0} y1={-5.5} x2={0} y2={-2.5} />
+          <line x1={5.5} y1={0} x2={2.5} y2={0} />
+          <line x1={0} y1={5.5} x2={0} y2={2.5} />
+          <line x1={-5.5} y1={0} x2={-2.5} y2={0} />
+          <circle r={2} fill={color} stroke="none" />
+        </g>
+      );
+    case 'damper': // duct cross-section with single angled blade
+      return (
+        <g stroke={color} strokeWidth={1.5} strokeLinecap="round">
+          <rect x={-5.5} y={-4} width={11} height={8} rx={0.5} fill="none" />
+          <line x1={-3.5} y1={3} x2={3.5} y2={-3} />
+        </g>
+      );
+    case 'valve': // bow-tie body + stem + crossbar handle
+      return (
+        <g stroke={color} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M-5,-4 L0,0 L-5,4 Z" fill={color} strokeWidth={0.5} />
+          <path d="M5,-4 L0,0 L5,4 Z" fill={color} strokeWidth={0.5} />
+          <line x1={0} y1={0} x2={0} y2={-6} strokeWidth={1.5} />
+          <line x1={-2.5} y1={-6} x2={2.5} y2={-6} strokeWidth={2} />
+        </g>
+      );
+    default:
+      return null;
+  }
 };
 
 const DeviceNode = ({ device, selected, onClick }: { device: Device; selected: boolean; onClick: () => void }) => {
@@ -47,9 +78,9 @@ const DeviceNode = ({ device, selected, onClick }: { device: Device; selected: b
           )}
           <circle cx={device.x} cy={device.y} r={12} fill="hsl(var(--card))" stroke="none" />
           <circle cx={device.x} cy={device.y} r={12} fill={`hsl(${statusColor[device.status]} / 0.15)`} stroke={color} strokeWidth={1.5} />
-          <text x={device.x} y={device.y + 1} textAnchor="middle" dominantBaseline="middle" fill={color} fontSize={9} fontWeight={600} fontFamily="var(--font-display)">
-            {deviceIcon[device.type]}
-          </text>
+          <g transform={`translate(${device.x},${device.y})`}>
+            <DeviceIconSVG type={device.type} color={color} />
+          </g>
         </motion.g>
       </TooltipTrigger>
       <TooltipContent side="top" className="bg-popover border-border text-popover-foreground p-0">
@@ -59,7 +90,7 @@ const DeviceNode = ({ device, selected, onClick }: { device: Device; selected: b
           <div className="flex items-center gap-1.5 mt-1">
             <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
             <span className="text-[11px] capitalize">{device.status}</span>
-            <span className="text-[11px] text-muted-foreground ml-1">Score: {device.anomalyScore.toFixed(2)}</span>
+            <span className="text-[11px] text-muted-foreground ml-1">Confidence Anomaly: {formatAnomalyConfidence(device.anomalyScore)}</span>
           </div>
         </div>
       </TooltipContent>
@@ -79,13 +110,13 @@ const ductConnections = [
   { targetId: 'BEL-DMP-008', d: 'M 460 390 L 460 520 L 350 520' },
 ];
 
-const AnimatedDuct = ({ d, flow }: { d: string; flow: number }) => (
+const AnimatedDuct = ({ id, d, flow }: { id: string; d: string; flow: number }) => (
   <g>
-    <path d={d} stroke="hsl(var(--brand) / 0.12)" strokeWidth={3} fill="none" strokeLinecap="round" />
+    <path id={id} d={d} stroke="hsl(var(--status-healthy) / 0.12)" strokeWidth={3} fill="none" strokeLinecap="round" />
     {flow > 0 && (
       <path
         d={d}
-        stroke="hsl(var(--brand) / 0.55)"
+        stroke="hsl(var(--status-healthy) / 0.55)"
         strokeWidth={1.5}
         fill="none"
         strokeLinecap="round"
@@ -100,7 +131,7 @@ const AnimatedDuct = ({ d, flow }: { d: string; flow: number }) => (
 const Ductwork = ({ nodePositions }: { nodePositions: Record<string, number> }) => (
   <g>
     {ductConnections.map(({ targetId, d }) => (
-      <AnimatedDuct key={targetId} d={d} flow={nodePositions[targetId] ?? 0} />
+      <AnimatedDuct key={targetId} id={`duct-${targetId}`} d={d} flow={nodePositions[targetId] ?? 0} />
     ))}
   </g>
 );
@@ -271,7 +302,8 @@ const AirflowOverlay = ({ devices, nodePositions }: { devices: Device[]; nodePos
       .filter(d => d.airflowDirection && (nodePositions[d.id] ?? 0) > 0)
       .map(d => {
         const flow = nodePositions[d.id] ?? 0;
-        const dur = Math.max(1.5, 4 - flow * 2.5);
+        const baseDur = Math.max(1.5, 4 - flow * 2.5);
+        const dur = d.airflowDirection === 'supply' ? baseDur * 1.6 : baseDur;
         const color = airflowColor[d.airflowDirection!];
         return Array.from({ length: RING_COUNT }, (_, i) => (
           <AirflowRing
@@ -373,34 +405,39 @@ export default function FacilityMap({ ahuUnits, devices, nodePositions, onDevice
       >
         {/* Zoom controls */}
         <div className="absolute top-3 right-3 z-10 flex flex-col gap-1">
-          <button onClick={zoomIn} className="w-8 h-8 flex items-center justify-center bg-secondary border border-border text-muted-foreground hover:text-foreground transition-colors">
+          <button onClick={zoomIn} className="w-8 h-8 flex items-center justify-center bg-card border border-border rounded-md text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors shadow-sm">
             <ZoomIn size={14} />
           </button>
-          <button onClick={zoomOut} className="w-8 h-8 flex items-center justify-center bg-secondary border border-border text-muted-foreground hover:text-foreground transition-colors">
+          <button onClick={zoomOut} className="w-8 h-8 flex items-center justify-center bg-card border border-border rounded-md text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors shadow-sm">
             <ZoomOut size={14} />
           </button>
-          <button onClick={resetView} className="w-8 h-8 flex items-center justify-center bg-secondary border border-border text-muted-foreground hover:text-foreground transition-colors">
+          <button onClick={resetView} className="w-8 h-8 flex items-center justify-center bg-card border border-border rounded-md text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors shadow-sm">
             <Maximize size={14} />
           </button>
         </div>
 
         {/* Zoom level indicator */}
-        <div className="absolute bottom-3 left-3 z-10 text-[10px] text-muted-foreground font-display bg-secondary/80 px-2 py-1 border border-border">
+        <div className="absolute bottom-3 left-3 z-10 text-[10px] text-muted-foreground font-display bg-card/90 px-2 py-1 border border-border rounded-md shadow-sm">
           {Math.round(transform.scale * 100)}%
         </div>
 
         {/* Legend */}
-        <div className="absolute bottom-3 right-3 z-10 flex items-center gap-3 text-[10px] text-muted-foreground bg-secondary px-3 py-1.5 border border-border">
+        <div className="absolute bottom-3 right-3 z-10 flex items-center gap-3 text-[10px] text-muted-foreground bg-card px-3 py-1.5 border border-border rounded-md shadow-sm">
           {['healthy', 'warning', 'fault'].map(s => (
             <span key={s} className="flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: `hsl(${statusColor[s]})` }} />
               <span className="capitalize">{s}</span>
             </span>
           ))}
-          <span className="border-l border-border pl-3 flex items-center gap-1.5">
-            <span className="font-display">A</span>Act
-            <span className="font-display ml-1">D</span>Dmp
-            <span className="font-display ml-1">V</span>Vlv
+          <span className="border-l border-border pl-3 flex items-center gap-2.5">
+            {(['actuator', 'damper', 'valve'] as const).map((type, i) => (
+              <span key={type} className="flex items-center gap-1">
+                <svg width={14} height={14} viewBox="-7 -7 14 14">
+                  <DeviceIconSVG type={type} color="currentColor" />
+                </svg>
+                <span>{['Act', 'Dmp', 'Vlv'][i]}</span>
+              </span>
+            ))}
           </span>
           <span className="border-l border-border pl-3 flex items-center gap-2">
             <span className="flex items-center gap-1">

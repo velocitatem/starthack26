@@ -163,21 +163,57 @@
   }
 
   .airflow-expand {
-    animation: airflowExpand ease-out infinite;
+    animation: airflowExpand ease-in-out infinite;
   }
 
   .airflow-contract {
-    animation: airflowContract ease-in infinite;
+    animation: airflowContract ease-in-out infinite;
   }
 
   @keyframes airflowExpand {
-    0% { r: 6; opacity: 0.4; }
+    0% { r: 6; opacity: 0; }
+    10% { opacity: 0.3; }
+    70% { opacity: 0.15; }
     100% { r: 55; opacity: 0; }
   }
 
   @keyframes airflowContract {
     0% { r: 55; opacity: 0; }
-    70% { opacity: 0.3; }
+    30% { opacity: 0.15; }
+    90% { opacity: 0.3; }
     100% { r: 6; opacity: 0; }
+  }
+
+  .sidebar-active-bar {
+    @apply relative;
+  }
+  .sidebar-active-bar::before {
+    content: '';
+    @apply absolute left-0 top-1 bottom-1 w-[3px] rounded-r-sm;
+    background: hsl(var(--brand));
+  }
+
+  .card-accent-top {
+    border-top: 2px solid hsl(var(--brand));
+  }
+
+  .fault-card-accent {
+    border-left: 3px solid currentColor;
+  }
+
+  .data-row-header {
+    background: hsl(var(--muted) / 0.5);
+  }
+
+  .dark .card-accent-top {
+    box-shadow: 0 1px 12px -4px hsl(var(--brand) / 0.25);
+  }
+
+  .dark .data-row:hover {
+    background: hsl(var(--muted) / 0.8);
+  }
+
+  .dark .fault-card-accent {
+    box-shadow: inset 3px 0 8px -4px currentColor;
   }
 }

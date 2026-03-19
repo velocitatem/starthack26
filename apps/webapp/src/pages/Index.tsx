@@ -9,6 +9,7 @@ import { useFacilityData } from '@/hooks/useFacilityData';
 export default function Index() {
   const [activeView, setActiveView] = useState<'map' | 'alerts' | 'agent'>('map');
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { ahuUnits, buildingStats, devices, error, isLoading, isError, nodePositions } = useFacilityData();
   const selectedDevice = devices.find(device => device.id === selectedDeviceId) ?? null;
 
@@ -43,10 +44,16 @@ export default function Index() {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <AppSidebar activeView={activeView} onViewChange={setActiveView} buildingStats={buildingStats} />
-      
+      <AppSidebar
+        activeView={activeView}
+        onViewChange={setActiveView}
+        buildingStats={buildingStats}
+        collapsed={sidebarCollapsed}
+        onToggle={() => setSidebarCollapsed(c => !c)}
+      />
+
       <div className="relative flex flex-1 overflow-hidden">
-        {activeView === 'map' ? (
+        {activeView === 'map' && (
           <FacilityMap
             ahuUnits={ahuUnits}
             devices={devices}
@@ -54,19 +61,18 @@ export default function Index() {
             onDeviceSelect={(device) => setSelectedDeviceId(device.id)}
             selectedDeviceId={selectedDeviceId}
           />
-        ) : activeView === 'alerts' ? (
-          <AlertDashboard devices={devices} onNavigateToDevice={(device) => handleDeviceSelect(device.id)} />
-        ) : (
-          <AgentPanel devices={devices} />
         )}
+        {activeView === 'alerts' && (
+          <AlertDashboard devices={devices} onNavigateToDevice={(device) => handleDeviceSelect(device.id)} />
+        )}
+        {activeView === 'agent' && <AgentPanel devices={devices} />}
 
         {activeView === 'map' && (
           <DeviceDetailPanel device={selectedDevice} onClose={() => setSelectedDeviceId(null)} />
         )}
       </div>
 
-      {/* Top loading bar placeholder */}
-      <div className="fixed top-0 left-0 right-0 h-0.5 z-50" />
+      <div className="fixed top-0 left-0 right-0 h-0.5 z-50 bg-brand" />
     </div>
   );
 }
