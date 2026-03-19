@@ -58,7 +58,20 @@
             "language": "en",
             "hinglish_mode": false,
             "dynamic_variables": {
-                "dynamicVariablePlaceholders": {}
+                "dynamicVariablePlaceholders": {
+                    "severity": "high",
+                    "building_name": "Demo Tower",
+                    "product_name": "Belimo Energy Valve",
+                    "situation_summary": "Cooling output is degraded on the north loop.",
+                    "failure_name": "Valve tracking fault",
+                    "failure_summary": "The valve is stuck and airflow is outside the target range.",
+                    "likely_cause": "The actuator is not tracking commanded position.",
+                    "device_name": "North Return Valve",
+                    "device_id": "BEL-VLV-003",
+                    "detected_at": "2026-03-19T09:30:00Z",
+                    "recommended_action": "Inspect the valve actuator and confirm whether manual override is required.",
+                    "likely_cause_confidence": "medium"
+                }
             },
             "disable_first_message_interruptions": true,
             "prompt": {
@@ -266,10 +279,10 @@
         "guardrails": {
             "version": "1",
             "focus": {
-                "is_enabled": false
+                "is_enabled": true
             },
             "prompt_injection": {
-                "is_enabled": false
+                "is_enabled": true
             },
             "content": {
                 "execution_mode": "streaming",
@@ -302,6 +315,9 @@
                         "is_enabled": false,
                         "threshold": "medium"
                     }
+                },
+                "trigger_action": {
+                    "type": "end_call"
                 }
             },
             "moderation": {
