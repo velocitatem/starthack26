@@ -128,6 +128,7 @@ def test_backend_state_falls_back_to_memory_without_database_url(monkeypatch):
     monkeypatch.delenv("DATABASE_URL", raising=False)
     monkeypatch.setattr(backend_state, "_SCHEMA_READY", False)
     monkeypatch.setattr(backend_state, "_MEMORY_STATE", None)
+    monkeypatch.setattr(backend_state, "_FORCE_MEMORY_STORAGE", False)
 
     backend_state.ensure_storage_ready()
     initial_state = backend_state.read_state()
@@ -141,10 +142,32 @@ def test_backend_state_falls_back_to_memory_without_database_url(monkeypatch):
     assert backend_state.read_state()["meta"]["seedSource"] == "mock"
 
 
+def test_backend_state_falls_back_to_memory_when_postgres_is_unavailable(monkeypatch):
+    class _OperationalError(RuntimeError):
+        pass
+
+    class _PsycopgStub:
+        OperationalError = _OperationalError
+
+    monkeypatch.setenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/app")
+    monkeypatch.setenv("STATE_DB_FALLBACK_TO_MEMORY", "1")
+    monkeypatch.setattr(backend_state, "psycopg", _PsycopgStub)
+    monkeypatch.setattr(backend_state, "_connect_postgres", lambda: (_ for _ in ()).throw(_OperationalError("db down")))
+    monkeypatch.setattr(backend_state, "_SCHEMA_READY", False)
+    monkeypatch.setattr(backend_state, "_MEMORY_STATE", None)
+    monkeypatch.setattr(backend_state, "_FORCE_MEMORY_STORAGE", False)
+
+    backend_state.ensure_storage_ready()
+
+    assert backend_state.read_state()["nodes"] == {}
+    assert backend_state._FORCE_MEMORY_STORAGE is True
+
+
 def test_building_document_helpers_work_in_memory_mode(monkeypatch):
     monkeypatch.delenv("DATABASE_URL", raising=False)
     monkeypatch.setattr(backend_state, "_SCHEMA_READY", False)
     monkeypatch.setattr(backend_state, "_MEMORY_STATE", None)
+    monkeypatch.setattr(backend_state, "_FORCE_MEMORY_STORAGE", False)
 
     inserted = backend_state.insert_building_document(
         "doc-001",

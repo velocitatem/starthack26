@@ -17,6 +17,7 @@ State = dict[str, Any]
 T = TypeVar("T")
 _SCHEMA_READY = False
 _MEMORY_STATE: State | None = None
+_FORCE_MEMORY_STORAGE = False
 
 _SINGLETON_ID = 1
 _PG_ADVISORY_LOCK_KEY = 461923007
@@ -274,7 +275,19 @@ def _postgres_dsn() -> str:
 
 
 def _use_memory_storage() -> bool:
-    return not os.getenv("DATABASE_URL")
+    return _FORCE_MEMORY_STORAGE or not os.getenv("DATABASE_URL")
+
+
+def _allow_memory_fallback_on_db_error() -> bool:
+    value = str(os.getenv("STATE_DB_FALLBACK_TO_MEMORY") or "1").strip().lower()
+    return value not in {"0", "false", "no", "off"}
+
+
+def _enable_memory_storage_fallback() -> None:
+    global _FORCE_MEMORY_STORAGE, _MEMORY_STATE, _SCHEMA_READY
+    _FORCE_MEMORY_STORAGE = True
+    _MEMORY_STATE = _normalize_state(_MEMORY_STATE)
+    _SCHEMA_READY = True
 
 
 def _connect_retry_attempts() -> int:
@@ -1786,13 +1799,23 @@ def ensure_storage_ready() -> None:
     if psycopg is None or Json is None:
         raise RuntimeError("psycopg is required when DATABASE_URL is set")
 
-    with _connect_postgres() as conn:
-        with conn.cursor() as cur:
-            _acquire_state_advisory_lock(cur)
-            _create_relational_schema(cur)
-            _ensure_singleton_rows(cur)
-            _bootstrap_relational_state_if_needed(cur)
-        conn.commit()
+    try:
+        with _connect_postgres() as conn:
+            with conn.cursor() as cur:
+                _acquire_state_advisory_lock(cur)
+                _create_relational_schema(cur)
+                _ensure_singleton_rows(cur)
+                _bootstrap_relational_state_if_needed(cur)
+            conn.commit()
+    except psycopg.OperationalError:
+        if not _allow_memory_fallback_on_db_error():
+            raise
+        print(
+            "[backend-state] DATABASE_URL is set but Postgres is unavailable; "
+            "falling back to in-memory storage for this process"
+        )
+        _enable_memory_storage_fallback()
+        return
 
     _SCHEMA_READY = True
 
