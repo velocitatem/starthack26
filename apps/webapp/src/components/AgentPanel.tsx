@@ -96,6 +96,7 @@ export default function AgentPanel({ devices }: AgentPanelProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const documentInputRef = useRef<HTMLInputElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
+  const nodePickerRef = useRef<HTMLDivElement>(null);
   const documentsQuery = useDocumentsList();
   const uploadDocumentMutation = useUploadDocument();
   const deleteDocumentMutation = useDeleteDocument();
@@ -114,6 +115,17 @@ export default function AgentPanel({ devices }: AgentPanelProps) {
   const [showNodePicker, setShowNodePicker] = useState(false);
   const [pendingAction, setPendingAction] = useState<AgentPendingAction | null>(null);
   const [latestToolEvents, setLatestToolEvents] = useState<AgentToolEvent[]>([]);
+
+  useEffect(() => {
+    if (!showNodePicker) return;
+    const handler = (e: MouseEvent) => {
+      if (nodePickerRef.current && !nodePickerRef.current.contains(e.target as Node)) {
+        setShowNodePicker(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showNodePicker]);
 
   const topFault = useMemo(() => {
     const faultEntries = devices
@@ -507,7 +519,7 @@ export default function AgentPanel({ devices }: AgentPanelProps) {
             )}
 
             {showNodePicker && (
-              <div className="absolute bottom-full left-0 mb-1 border border-border bg-card min-w-[240px] max-h-[200px] overflow-y-auto shadow-md z-50">
+              <div ref={nodePickerRef} className="absolute bottom-full left-0 mb-1 border border-border bg-card min-w-[240px] max-h-[200px] overflow-y-auto shadow-md z-50">
                 {nodeSuggestions.map((node) => (
                   <button
                     key={node.id}
@@ -566,10 +578,7 @@ export default function AgentPanel({ devices }: AgentPanelProps) {
                 onClick={(event) => {
                   setCaretPosition(event.currentTarget.selectionStart ?? event.currentTarget.value.length);
                 }}
-                onBlur={() => {
-                  setCaretPosition(0);
-                  setTimeout(() => setShowNodePicker(false), 150);
-                }}
+                onBlur={() => setCaretPosition(0)}
                 onKeyUp={(event) => {
                   setCaretPosition(event.currentTarget.selectionStart ?? event.currentTarget.value.length);
                 }}

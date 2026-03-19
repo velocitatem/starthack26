@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import FacilityMap from '@/components/FacilityMap';
+import DatacenterMap from '@/components/DatacenterMap';
 import DeviceDetailPanel from '@/components/DeviceDetailPanel';
 import { type FacilityContext } from '@/types/facility';
 
@@ -11,7 +11,7 @@ export default function MapPage() {
 
   return (
     <>
-      <FacilityMap
+      <DatacenterMap
         ahuUnits={ahuUnits}
         devices={devices}
         nodePositions={nodePositions}
