@@ -94,6 +94,14 @@ export interface BuildingStats {
   activeFaults: number;
 }
 
+export interface BuildingDocumentListItem {
+  id: string;
+  filename: string;
+  status: 'processing' | 'ready' | 'error';
+  errorMessage: string | null;
+  uploadedAt: string;
+}
+
 export interface DeviceTemplate {
   id: string;
   name: string;

@@ -4,6 +4,7 @@
  */
 import type {
   AHUUnit,
+  BuildingDocumentListItem,
   BuildingStats,
   Device,
   DeviceTemplate,
@@ -15,14 +16,6 @@ import type {
   TelemetryPoint,
   Zone,
 } from '@/types/facility';
-
-export interface BuildingDocumentListItem {
-  id: string;
-  filename: string;
-  status: 'processing' | 'ready' | 'error';
-  errorMessage: string | null;
-  uploadedAt: string;
-}
 
 const generateTelemetry = (base: number, variance: number, anomaly = false): TelemetryPoint[] => {
   return Array.from({ length: 24 }, (_, i) => ({

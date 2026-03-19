@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type BuildingDocumentListItem } from '@/data/mockDevices';
 import { buildBackendUrl } from '@/lib/backend';
+import { type BuildingDocumentListItem } from '@/types/facility';
 
 const DOCUMENTS_QUERY_KEY = ['building-documents'];
 
