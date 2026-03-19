@@ -35,7 +35,7 @@ export default function DeviceDashboardPage() {
           </Breadcrumb>
         }
       />
-      <div className="px-6 pb-3">
+      <div className="px-6 pt-6 pb-3">
         <h2 className="font-display text-lg tracking-tight">{device?.name ?? deviceId ?? 'Unknown Device'}</h2>
         {device && <p className="text-[11px] text-muted-foreground mt-0.5">{device.id} · {device.type} · {device.zone}</p>}
       </div>

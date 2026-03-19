@@ -14,6 +14,8 @@ interface DatacenterMapProps {
   devices: Device[];
   nodePositions: Record<string, number>;
   onDeviceSelect: (device: Device) => void;
+  onDeviceHover?: (device: Device) => void;
+  onDeviceHoverEnd?: () => void;
   selectedDeviceId: string | null;
 }
 
@@ -283,75 +285,62 @@ const DeviceNode = ({
   device,
   selected,
   onClick,
+  onMouseEnter,
+  onMouseLeave,
 }: {
   device: Device;
   selected: boolean;
   onClick: () => void;
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
 }) => {
   const color = `hsl(${statusColor[device.status]})`;
   const position = ductDevicePositions[device.id] ?? { x: device.x, y: device.y };
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <motion.g
-          onClick={onClick}
-          style={{ cursor: 'pointer' }}
-          whileHover={{ scale: 1.15 }}
-          transition={{ duration: 0.12, ease: [0.2, 0, 0, 1] }}
-        >
-          {device.status === 'fault' && (
-            <circle
-              cx={position.x}
-              cy={position.y}
-              r={18}
-              fill="none"
-              stroke={color}
-              strokeWidth={1}
-              opacity={0.45}
-              className="animate-pulse-glow"
-            />
-          )}
-          {selected && (
-            <circle
-              cx={position.x}
-              cy={position.y}
-              r={16}
-              fill="none"
-              stroke="hsl(var(--foreground))"
-              strokeWidth={1.5}
-            />
-          )}
-          <circle cx={position.x} cy={position.y} r={12} fill="hsl(var(--card))" stroke="none" />
-          <circle
-            cx={position.x}
-            cy={position.y}
-            r={12}
-            fill={`hsl(${statusColor[device.status]} / 0.15)`}
-            stroke={color}
-            strokeWidth={1.5}
-          />
-          <g transform={`translate(${position.x},${position.y})`}>
-            <DeviceIconSVG type={device.type} color={color} />
-          </g>
-        </motion.g>
-      </TooltipTrigger>
-      <TooltipContent side="top" className="bg-popover border-border text-popover-foreground p-0">
-        <div className="px-3 py-2">
-          <div className="text-[12px] font-medium">{device.name}</div>
-          <div className="text-[11px] text-muted-foreground">
-            {device.id} · {device.zone}
-          </div>
-          <div className="flex items-center gap-1.5 mt-1">
-            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
-            <span className="text-[11px] capitalize">{device.status}</span>
-            <span className="text-[11px] text-muted-foreground ml-1">
-              Confidence Anomaly: {formatAnomalyConfidence(device.anomalyScore)}
-            </span>
-          </div>
-        </div>
-      </TooltipContent>
-    </Tooltip>
+    <motion.g
+      onClick={onClick}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      style={{ cursor: 'pointer' }}
+      whileHover={{ scale: 1.15 }}
+      transition={{ duration: 0.12, ease: [0.2, 0, 0, 1] }}
+    >
+      {device.status === 'fault' && (
+        <circle
+          cx={position.x}
+          cy={position.y}
+          r={18}
+          fill="none"
+          stroke={color}
+          strokeWidth={1}
+          opacity={0.45}
+          className="animate-pulse-glow"
+        />
+      )}
+      {selected && (
+        <circle
+          cx={position.x}
+          cy={position.y}
+          r={16}
+          fill="none"
+          stroke="hsl(var(--foreground))"
+          strokeWidth={1.5}
+        />
+      )}
+      <circle cx={position.x} cy={position.y} r={12} fill="hsl(var(--card))" stroke="none" />
+      <circle
+        cx={position.x}
+        cy={position.y}
+        r={12}
+        fill={`hsl(${statusColor[device.status]} / 0.15)`}
+        stroke={color}
+        strokeWidth={1.5}
+      />
+      <g transform={`translate(${position.x},${position.y})`}>
+        <DeviceIconSVG type={device.type} color={color} />
+      </g>
+    </motion.g>
   );
 };
 
@@ -873,6 +862,8 @@ export default function DatacenterMap({
   devices,
   nodePositions,
   onDeviceSelect,
+  onDeviceHover,
+  onDeviceHoverEnd,
   selectedDeviceId,
 }: DatacenterMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1190,7 +1181,7 @@ export default function DatacenterMap({
           </>
         }
       />
-      <div className="flex-1 p-6 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden">
         <motion.div
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1199,7 +1190,7 @@ export default function DatacenterMap({
           ref={containerRef}
           style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
         >
-          <div className="absolute top-3 right-3 z-10 flex flex-col gap-1">
+          <div className="absolute top-6 right-6 z-10 flex flex-col gap-1">
             <button
               onClick={zoomIn}
               className="w-8 h-8 flex items-center justify-center bg-card border border-border rounded-md text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors shadow-sm"
@@ -1221,13 +1212,13 @@ export default function DatacenterMap({
           </div>
 
           {simulationStep === null && (
-            <div className="absolute top-3 left-3 z-10 text-[10px] text-muted-foreground font-display bg-card/90 px-2 py-1 border border-border rounded-md shadow-sm">
+            <div className="absolute top-6 left-6 z-10 text-[10px] text-muted-foreground font-display bg-card/90 px-2 py-1 border border-border rounded-md shadow-sm">
               Rows A-F · {devices.length} devices
             </div>
           )}
 
           {simulationStep !== null && showSimulationDebug && (
-            <div className="absolute top-3 left-3 z-10 w-[350px] max-w-[calc(100%-120px)] bg-card/95 border border-border rounded-md px-3 py-2 shadow-sm">
+            <div className="absolute top-6 left-6 z-10 w-[350px] max-w-[calc(100%-120px)] bg-card/95 border border-border rounded-md px-3 py-2 shadow-sm">
               <div className="flex items-center justify-between gap-3 text-[11px] font-display">
                 <span>Backend Multiphysics + Bayesian Simulation</span>
                 <span className="text-muted-foreground">{simulationPercent}%</span>
@@ -1318,17 +1309,17 @@ export default function DatacenterMap({
           )}
 
           {simulationError && (
-            <div className="absolute top-3 left-3 z-10 max-w-[calc(100%-120px)] bg-card/95 border border-status-fault rounded-md px-3 py-2 shadow-sm text-[11px]">
+            <div className="absolute top-6 left-6 z-10 max-w-[calc(100%-120px)] bg-card/95 border border-status-fault rounded-md px-3 py-2 shadow-sm text-[11px]">
               <span className="text-status-fault font-display">Simulation failed:</span>{' '}
               <span className="text-muted-foreground">{simulationError}</span>
             </div>
           )}
 
-          <div className="absolute bottom-3 left-3 z-10 text-[10px] text-muted-foreground font-display bg-card/90 px-2 py-1 border border-border rounded-md shadow-sm">
+          <div className="absolute bottom-6 left-6 z-10 text-[10px] text-muted-foreground font-display bg-card/90 px-2 py-1 border border-border rounded-md shadow-sm">
             {Math.round(transform.scale * 100)}%{simulationActive ? ' · simulation' : ''}
           </div>
 
-          <div className="absolute bottom-3 right-3 z-10 flex items-center gap-3 text-[10px] text-muted-foreground bg-card px-3 py-1.5 border border-border rounded-md shadow-sm">
+          <div className="absolute bottom-6 right-6 z-10 flex items-center gap-3 text-[10px] text-muted-foreground bg-card px-3 py-1.5 border border-border rounded-md shadow-sm">
             {['healthy', 'warning', 'fault'].map((status) => (
               <span key={status} className="flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: `hsl(${statusColor[status]})` }} />
@@ -1381,6 +1372,8 @@ export default function DatacenterMap({
                 device={device}
                 selected={device.id === selectedDeviceId}
                 onClick={() => onDeviceSelect(device)}
+                onMouseEnter={() => onDeviceHover?.(device)}
+                onMouseLeave={() => onDeviceHoverEnd?.()}
               />
             ))}
           </svg>

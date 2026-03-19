@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Gauge, Move, Thermometer } from 'lucide-react';
+import { Gauge, Move, Thermometer, Waves, Zap, Droplets, Wind, Activity, Antenna, BatteryCharging, SlidersHorizontal, type LucideIcon } from 'lucide-react';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
 import { type Device, type TelemetryPoint } from '@/types/facility';
@@ -10,11 +10,25 @@ const CHANNEL_COLORS: Record<string, string> = {
   temperature: 'hsl(var(--status-healthy))',
 };
 
-const CHANNEL_ICONS: Record<string, typeof Thermometer> = {
+const CHANNEL_ICONS: Record<string, LucideIcon> = {
   torque: Gauge,
   position: Move,
+  position_percent: Move,
   temperature: Thermometer,
+  setpoint_position_percent: SlidersHorizontal,
+  vibration: Waves,
+  current: Zap,
+  power_w: Zap,
+  humidity: Droplets,
+  flow: Wind,
+  pressure: Gauge,
+  voltage: BatteryCharging,
+  signal: Antenna,
 };
+
+const FALLBACK_ICONS: LucideIcon[] = [Activity, Waves, BatteryCharging, Droplets, Wind];
+const getChannelIcon = (key: string): LucideIcon =>
+  CHANNEL_ICONS[key] ?? FALLBACK_ICONS[Math.abs([...key].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0)) % FALLBACK_ICONS.length];
 
 const titleCase = (value: string) => value
   .split('_')
@@ -124,7 +138,7 @@ export default function DeviceTelemetry({
             <div key={channel.key} className="border border-border bg-card p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  {(() => { const Icon = CHANNEL_ICONS[channel.key] ?? Gauge; return <Icon size={12} className="text-muted-foreground" />; })()}
+                  {(() => { const Icon = getChannelIcon(channel.key); return <Icon size={12} className="text-muted-foreground" />; })()}
                   <span className="label-caps">{channel.label}</span>
                 </div>
                 <span className="font-display text-sm text-foreground">{latestValue(channel.data)}</span>
