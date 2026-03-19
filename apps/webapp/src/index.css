@@ -214,6 +214,6 @@
   }
 
   .dark .fault-card-accent {
-    box-shadow: inset 3px 0 8px -4px currentColor;
+    box-shadow: none;
   }
 }

@@ -7,7 +7,7 @@ import AgentPanel from '@/components/AgentPanel';
 import { useFacilityData } from '@/hooks/useFacilityData';
 
 export default function Index() {
-  const [activeView, setActiveView] = useState<'map' | 'alerts' | 'agent'>('map');
+  const [activeView, setActiveView] = useState<'map' | 'issues' | 'agent'>('map');
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { ahuUnits, buildingStats, devices, error, historyByNodeId, isLoading, isError, nodePositions } = useFacilityData();
@@ -62,7 +62,7 @@ export default function Index() {
             selectedDeviceId={selectedDeviceId}
           />
         )}
-        {activeView === 'alerts' && (
+        {activeView === 'issues' && (
           <AlertDashboard devices={devices} onNavigateToDevice={(device) => handleDeviceSelect(device.id)} />
         )}
         {activeView === 'agent' && <AgentPanel devices={devices} historyByNodeId={historyByNodeId} />}

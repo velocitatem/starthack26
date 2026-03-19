@@ -30,20 +30,24 @@ const severityBadge: Record<string, string> = {
 
 export default function AlertDashboard({ devices, onNavigateToDevice }: AlertDashboardProps) {
   const [severityFilter, setSeverityFilter] = useState<string | null>(null);
+  const [deviceFilter, setDeviceFilter] = useState<string | null>(null);
   const { mutate: resolve, pendingFaultId } = useResolveFault();
 
   const alerts: AlertItem[] = devices
     .flatMap(device => device.faults.map(fault => ({ device, fault })))
     .sort((a, b) => severityOrder[a.fault.severity] - severityOrder[b.fault.severity]);
 
-  const filtered = severityFilter ? alerts.filter(a => a.fault.severity === severityFilter) : alerts;
+  const uniqueDeviceIds = [...new Set(devices.map(d => d.id))].sort();
+  const filtered = alerts
+    .filter(a => !severityFilter || a.fault.severity === severityFilter)
+    .filter(a => !deviceFilter || a.device.id === deviceFilter);
   const totalEnergyWaste = `${alerts.reduce((sum, alert) => sum + parseEnergyWaste(alert.fault.energyWaste), 0).toLocaleString()} kWh/day`;
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <PageHeader
-        title="Alert Dashboard"
-        subtitle={`${alerts.length} active faults across ${new Set(alerts.map(a => a.device.id)).size} devices`}
+        title="Issues"
+        subtitle={`${filtered.length} active faults across ${new Set(filtered.map(a => a.device.id)).size} devices`}
       />
       <div className="flex-1 p-6 overflow-y-auto">
 
@@ -66,7 +70,28 @@ export default function AlertDashboard({ devices, onNavigateToDevice }: AlertDas
         ))}
       </div>
 
-      {/* Alert list */}
+      <div className="flex items-center gap-3 mb-6">
+        <div className="label-caps shrink-0">Device</div>
+        <select
+          value={deviceFilter ?? ''}
+          onChange={(e) => setDeviceFilter(e.target.value || null)}
+          className="h-8 border border-border bg-background px-2 text-[12px] outline-none min-w-[200px]"
+        >
+          <option value="">All devices</option>
+          {uniqueDeviceIds.map(id => (
+            <option key={id} value={id}>{id}</option>
+          ))}
+        </select>
+        {deviceFilter && (
+          <button
+            onClick={() => setDeviceFilter(null)}
+            className="text-[11px] text-muted-foreground hover:text-foreground transition-colors underline"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+
       <div className="border border-border bg-card">
         <div className="data-row border-b border-border data-row-header">
           <span className="label-caps flex-1">Fault</span>

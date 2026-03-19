@@ -3,8 +3,8 @@ import { AlertTriangle, Bot, Map, PanelLeftClose, PanelLeftOpen, type LucideIcon
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface AppSidebarProps {
-  activeView: 'map' | 'alerts' | 'agent';
-  onViewChange: (view: 'map' | 'alerts' | 'agent') => void;
+  activeView: 'map' | 'issues' | 'agent';
+  onViewChange: (view: 'map' | 'issues' | 'agent') => void;
   buildingStats: BuildingStats;
   collapsed: boolean;
   onToggle: () => void;
@@ -73,7 +73,7 @@ export default function AppSidebar({ activeView, onViewChange, buildingStats, co
 
       <div className="py-2 border-b border-sidebar-border">
         <NavItem icon={Map} label="Map" active={activeView === 'map'} onClick={() => onViewChange('map')} collapsed={collapsed} />
-        <NavItem icon={AlertTriangle} label="Alerts" active={activeView === 'alerts'} onClick={() => onViewChange('alerts')} collapsed={collapsed} />
+        <NavItem icon={AlertTriangle} label="Issues" active={activeView === 'issues'} onClick={() => onViewChange('issues')} collapsed={collapsed} />
         <NavItem icon={Bot} label="Agent" active={activeView === 'agent'} onClick={() => onViewChange('agent')} collapsed={collapsed} />
       </div>
 
