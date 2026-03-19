@@ -53,6 +53,10 @@ def _max_tool_steps() -> int:
     return _safe_int(os.getenv("AGENT_MAX_TOOL_STEPS", "6"), 6, 1, 12)
 
 
+def _escalation_phone_number() -> str:
+    return str(os.getenv("ESCALATION_PHONE_NUMBER") or "").strip()
+
+
 def _normalize_actor(raw: Any) -> str:
     text = str(raw or "webapp-operator").strip()
     if not text:
@@ -525,18 +529,16 @@ def _tool_resolve_fault(arguments: dict[str, Any], actor: str) -> dict[str, Any]
 
     return update_state(_mutator)
 
-
-ESCALATION_PHONE_NUMBER = "+34672359401"
-
-
 def _tool_escalate_fault(arguments: dict[str, Any]) -> dict[str, Any]:
     fault_id = str(arguments.get("faultId") or "").strip()
-    to_number = ESCALATION_PHONE_NUMBER
+    to_number = _escalation_phone_number()
     engineer_name = str(arguments.get("engineerName") or "On-Site Engineer").strip()
     building_name_override = str(arguments.get("buildingName") or "").strip()
 
     if not fault_id:
         return {"ok": False, "error": "faultId is required"}
+    if not to_number:
+        return {"ok": False, "error": "ESCALATION_PHONE_NUMBER is not set"}
 
     def _mutator(state: dict[str, Any]) -> dict[str, Any]:
         faults = state.get("faults") if isinstance(state.get("faults"), dict) else {}
@@ -726,8 +728,9 @@ def _pending_action_reply(name: str, arguments: dict[str, Any], action_id: str) 
         )
     if name == "escalate_fault":
         fault_id = str(arguments.get("faultId") or "unknown")
+        to_number = _escalation_phone_number() or "the configured escalation number"
         return (
-            f"I am ready to call {ESCALATION_PHONE_NUMBER} about fault `{fault_id}`. "
+            f"I am ready to call {to_number} about fault `{fault_id}`. "
             f"Approve this action to place the call. Pending action id: {action_id}."
         )
     return f"I need approval before executing `{name}`. Pending action id: {action_id}."
