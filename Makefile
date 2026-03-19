@@ -96,6 +96,10 @@ lift: up ## Alias for 'up'
 lift.ml: ## Start core services + ML inference
 	@docker compose --profile ml up -d postgres redis backend-fastapi backend-classifier ml-inference worker
 
+lift.sim: ## Start core services + node simulator
+	@docker compose --profile sim up -d postgres redis backend-fastapi backend-classifier node-simulator
+	@echo "Node simulator publishing to backend-fastapi"
+
 lift.minio: ## Start core services + MinIO object storage
 	@docker compose --profile minio up -d
 	@echo "MinIO console: http://localhost:9901 (minioadmin/minioadmin)"

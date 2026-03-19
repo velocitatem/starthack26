@@ -15,6 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Install local shared library without pulling full project dependencies.
 COPY pyproject.toml ./pyproject.toml
 COPY shacklib/ ./shacklib/
+COPY ml/data/anomaly_dataset.csv ./ml/data/anomaly_dataset.csv
 RUN touch README.md \
     && pip install --no-cache-dir --no-deps . \
     && rm README.md

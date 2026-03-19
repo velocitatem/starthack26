@@ -1,0 +1,21 @@
+{
+  "name": "simulator",
+  "root": "apps/simulator",
+  "sourceRoot": "apps/simulator",
+  "projectType": "application",
+  "implicitDependencies": ["shacklib"],
+  "targets": {
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "PYTHONPATH=. .venv/bin/python apps/simulator/run.py"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": ".venv/bin/pytest apps/simulator -v"
+      }
+    }
+  }
+}

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { type NodeFaultHistoryResponse } from '@/data/mockDevices';
+import { type NodeFaultHistoryResponse } from '@/types/facility';
 import { buildBackendUrl } from '@/lib/backend';
 
 const fetchNodeFaultHistory = async (

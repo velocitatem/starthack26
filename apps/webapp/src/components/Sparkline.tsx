@@ -1,4 +1,4 @@
-import { type TelemetryPoint } from '@/data/mockDevices';
+import { type TelemetryPoint } from '@/types/facility';
 
 interface SparklineProps {
   data: TelemetryPoint[];

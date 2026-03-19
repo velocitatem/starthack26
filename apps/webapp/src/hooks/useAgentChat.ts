@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { type AgentChatRequest, type AgentChatResponse } from '@/data/mockDevices';
+import { type AgentChatRequest, type AgentChatResponse } from '@/types/facility';
 import { buildBackendUrl } from '@/lib/backend';
 
 const postAgentChat = async (payload: AgentChatRequest): Promise<AgentChatResponse> => {

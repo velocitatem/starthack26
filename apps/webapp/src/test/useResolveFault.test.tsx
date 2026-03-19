@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { useResolveFault } from '@/hooks/useFacilityData';
+import { buildBackendUrl } from '@/lib/backend';
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -40,7 +41,7 @@ describe('useResolveFault', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(fetchSpy).toHaveBeenCalledWith('/api/faults/fault%2F123/resolve', {
+    expect(fetchSpy).toHaveBeenCalledWith(buildBackendUrl('/api/faults/fault%2F123/resolve'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ resolvedBy: 'operator' }),

@@ -20,6 +20,13 @@ services:
       - PYTHONPATH=/app
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-app}
       - ML_URL=${ML_URL:-http://ml-inference:8000}
+      - BACKEND_STARTUP_SEED_MODE=${BACKEND_STARTUP_SEED_MODE:-always}
+      - BACKEND_STARTUP_SEED_NODE_COUNT=${BACKEND_STARTUP_SEED_NODE_COUNT:-8}
+      - BACKEND_STARTUP_SEED_SEVERE_RATIO=${BACKEND_STARTUP_SEED_SEVERE_RATIO:-0.1}
+      - BACKEND_STARTUP_SEED_MODERATE_RATIO=${BACKEND_STARTUP_SEED_MODERATE_RATIO:-0.1}
+      - BACKEND_STARTUP_SEED_HISTORY_POINTS=${BACKEND_STARTUP_SEED_HISTORY_POINTS:-120}
+      - BACKEND_STARTUP_SEED_INTERVAL_MINUTES=${BACKEND_STARTUP_SEED_INTERVAL_MINUTES:-5}
+      - BACKEND_STARTUP_SEED_RANDOM_SEED=${BACKEND_STARTUP_SEED_RANDOM_SEED:-42}
     volumes:
       - ./.env:/app/.env
     depends_on:
@@ -85,6 +92,21 @@ services:
         condition: service_started
       postgres:
         condition: service_healthy
+    restart: unless-stopped
+
+  node-simulator:
+    container_name: "${NAME}-node-simulator"
+    profiles: ["sim"]
+    build:
+      context: ./
+      dockerfile: ./docker/simulator.Dockerfile
+    environment:
+      - SIM_BACKEND_URL=http://backend-fastapi:5000
+      - SIM_NODE_ID=${SIM_NODE_ID:-BEL-VLV-003}
+      - SIM_SPEED=${SIM_SPEED:-1.0}
+      - SIM_LOOP=${SIM_LOOP:-1}
+    depends_on:
+      - backend-fastapi
     restart: unless-stopped
 
   minio:

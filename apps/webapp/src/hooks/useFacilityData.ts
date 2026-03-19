@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type FacilityStatusResponse } from '@/data/mockDevices';
+import { type FacilityStatusResponse } from '@/types/facility';
 import { buildBackendUrl } from '@/lib/backend';
 
 const fetchFacilityStatus = async (): Promise<FacilityStatusResponse> => {

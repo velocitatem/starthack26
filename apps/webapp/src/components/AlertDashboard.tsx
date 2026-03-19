@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { type Device, type Fault } from '@/data/mockDevices';
+import { type Device, type Fault } from '@/types/facility';
 import { useResolveFault } from '@/hooks/useFacilityData';
 import { Zap, Check, Loader2 } from 'lucide-react';
+import PageHeader from '@/components/PageHeader';
 
 interface AlertDashboardProps {
   devices: Device[];
@@ -39,11 +40,12 @@ export default function AlertDashboard({ devices, onNavigateToDevice }: AlertDas
   const totalEnergyWaste = `${alerts.reduce((sum, alert) => sum + parseEnergyWaste(alert.fault.energyWaste), 0).toLocaleString()} kWh/day`;
 
   return (
-    <div className="flex-1 p-6 overflow-y-auto">
-      <div className="mb-6">
-        <h1 className="font-display text-lg tracking-tight">Alert Dashboard</h1>
-        <p className="text-[13px] text-muted-foreground mt-0.5">{alerts.length} active faults across {new Set(alerts.map(a => a.device.id)).size} devices</p>
-      </div>
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <PageHeader
+        title="Alert Dashboard"
+        subtitle={`${alerts.length} active faults across ${new Set(alerts.map(a => a.device.id)).size} devices`}
+      />
+      <div className="flex-1 p-6 overflow-y-auto">
 
       {/* Summary bar */}
       <div className="grid grid-cols-4 gap-3 mb-6">
@@ -55,7 +57,7 @@ export default function AlertDashboard({ devices, onNavigateToDevice }: AlertDas
           ].map(s => (
           <div
             key={s.label}
-            className={`border bg-card p-4 cursor-pointer ${severityFilter === s.label.toLowerCase() ? 'border-foreground' : s.color}`}
+            className={`border bg-card p-4 cursor-pointer shadow-sm hover:shadow-md transition-shadow ${severityFilter === s.label.toLowerCase() ? 'card-accent-top border-foreground' : s.color}`}
             onClick={() => setSeverityFilter(severityFilter === s.label.toLowerCase() ? null : s.label === 'Total Energy Waste' ? null : s.label.toLowerCase())}
           >
             <div className="label-caps">{s.label}</div>
@@ -66,7 +68,7 @@ export default function AlertDashboard({ devices, onNavigateToDevice }: AlertDas
 
       {/* Alert list */}
       <div className="border border-border bg-card">
-        <div className="data-row border-b border-border">
+        <div className="data-row border-b border-border data-row-header">
           <span className="label-caps flex-1">Fault</span>
           <span className="label-caps w-28">Device</span>
           <span className="label-caps w-28">Zone</span>
@@ -116,6 +118,7 @@ export default function AlertDashboard({ devices, onNavigateToDevice }: AlertDas
             No faults match the current filter.
           </div>
         )}
+      </div>
       </div>
     </div>
   );

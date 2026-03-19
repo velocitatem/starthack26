@@ -6,7 +6,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import Index from '@/pages/Index';
 import { useFacilityData } from '@/hooks/useFacilityData';
-import { buildMockFacilityStatusResponse } from '@/data/mockDevices';
+import { buildMockFacilityStatusResponse } from './mockData';
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -75,15 +75,15 @@ describe('Index page', () => {
 
     render(<Index />, { wrapper });
 
-    expect(await screen.findByRole('heading', { name: 'Facility Overview' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Datacenter Overview' })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Alert Dashboard' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Alerts' }));
     expect(await screen.findByRole('heading', { name: 'Alert Dashboard' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByText('Stiction Suspected'));
 
     await waitFor(() => {
-      expect(screen.getByText('Living Room Chiller Valve')).toBeInTheDocument();
+      expect(screen.getByText('Valve Row A')).toBeInTheDocument();
     });
 
     expect(screen.getByText('Live Telemetry (24h)')).toBeInTheDocument();
