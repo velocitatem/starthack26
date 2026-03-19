@@ -14,7 +14,7 @@
     "test": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "python3 -c \"print('No tests configured for simulator')\""
+        "command": ".venv/bin/pytest apps/simulator -v"
       }
     }
   }
