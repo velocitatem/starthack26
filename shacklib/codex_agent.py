@@ -399,7 +399,7 @@ def _pending_action_summary(name: str, arguments: dict[str, Any]) -> str:
     if name == "escalate_fault":
         fault_id = str(arguments.get("faultId") or "unknown")
         to_number = _escalation_phone_number() or "the configured escalation number"
-        return f"Call {to_number} about fault `{fault_id}`"
+        return f"Call {to_number} about `{fault_id}`"
     return f"Execute `{name}`"
 
 
@@ -730,7 +730,7 @@ def _pending_action_reply(name: str, arguments: dict[str, Any], action_id: str) 
         fault_id = str(arguments.get("faultId") or "unknown")
         to_number = _escalation_phone_number() or "the configured escalation number"
         return (
-            f"I am ready to call {to_number} about fault `{fault_id}`. "
+            f"I am ready to call {to_number} about `{fault_id}`. "
             f"Approve this action to place the call. Pending action id: {action_id}."
         )
     return f"I need approval before executing `{name}`. Pending action id: {action_id}."

@@ -110,7 +110,7 @@ def test_codex_agent_escalation_pending_action_uses_configured_number(monkeypatc
     response = codex_agent.run_codex_agent_chat(
         {
             "messages": [
-                {"role": "user", "content": "Call the on-site engineer about fault fault-seed-0004"}
+                {"role": "user", "content": "Call the on-site engineer about `fault-seed-0004`"}
             ],
             "actor": "test-user",
         }
@@ -119,7 +119,7 @@ def test_codex_agent_escalation_pending_action_uses_configured_number(monkeypatc
     pending = response["pendingAction"]
     assert pending is not None
     assert pending["name"] == "escalate_fault"
-    assert pending["summary"] == "Call +41790001122 about fault `fault-seed-0004`"
+    assert pending["summary"] == "Call +41790001122 about `fault-seed-0004`"
     assert "+41790001122" in response["reply"]
 
 
