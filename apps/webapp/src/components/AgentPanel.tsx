@@ -4,13 +4,15 @@ import { Bot, Check, FileText, Loader2, Plus, Send, ShieldAlert, Trash2, X, Zap 
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { type AgentChatMessage, type AgentPendingAction, type AgentToolEvent, type Device } from '@/types/facility';
+import { type AgentChatMessage, type AgentPendingAction, type AgentRouteState, type AgentToolEvent, type Device } from '@/types/facility';
 import { useAgentChat } from '@/hooks/useAgentChat';
 import { useDeleteDocument, useDocumentsList, useUploadDocument } from '@/hooks/useBuildingDocuments';
 import PageHeader from '@/components/PageHeader';
 
 interface AgentPanelProps {
   devices: Device[];
+  routeSeed?: AgentRouteState | null;
+  onRouteSeedConsumed?: (seedId: string) => void;
 }
 
 interface ConversationMessage {
@@ -91,13 +93,14 @@ const extractMentionContext = (value: string, caretPosition: number): MentionCon
 /*  Main AgentPanel                                                    */
 /* ------------------------------------------------------------------ */
 
-export default function AgentPanel({ devices }: AgentPanelProps) {
+export default function AgentPanel({ devices, routeSeed = null, onRouteSeedConsumed }: AgentPanelProps) {
   const navigate = useNavigate();
   const agentChat = useAgentChat();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const documentInputRef = useRef<HTMLInputElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const nodePickerRef = useRef<HTMLDivElement>(null);
+  const consumedRouteSeedIdsRef = useRef<Set<string>>(new Set());
   const documentsQuery = useDocumentsList();
   const uploadDocumentMutation = useUploadDocument();
   const deleteDocumentMutation = useDeleteDocument();
@@ -241,7 +244,7 @@ export default function AgentPanel({ devices }: AgentPanelProps) {
     requestAnimationFrame(() => inputRef.current?.focus());
   };
 
-  const sendPrompt = (text: string) => {
+  function sendPrompt(text: string) {
     const prompt = text.trim();
     if (!prompt || agentChat.isPending) return;
 
@@ -268,7 +271,30 @@ export default function AgentPanel({ devices }: AgentPanelProps) {
         },
       },
     );
-  };
+  }
+
+  useEffect(() => {
+    if (!routeSeed) return;
+    if (consumedRouteSeedIdsRef.current.has(routeSeed.seedId)) return;
+
+    consumedRouteSeedIdsRef.current.add(routeSeed.seedId);
+    setInput(routeSeed.seedPrompt);
+    setCaretPosition(routeSeed.seedPrompt.length);
+
+    requestAnimationFrame(() => {
+      if (!inputRef.current) return;
+      if (routeSeed.focusInput) {
+        inputRef.current.focus();
+      }
+      inputRef.current.setSelectionRange(routeSeed.seedPrompt.length, routeSeed.seedPrompt.length);
+    });
+
+    if (routeSeed.autoSubmit) {
+      sendPrompt(routeSeed.seedPrompt);
+    }
+
+    onRouteSeedConsumed?.(routeSeed.seedId);
+  }, [onRouteSeedConsumed, routeSeed, sendPrompt]);
 
   const decidePendingAction = (decision: 'approve' | 'reject') => {
     if (!pendingAction || agentChat.isPending) return;
@@ -535,7 +561,7 @@ export default function AgentPanel({ devices }: AgentPanelProps) {
             )}
 
             <form
-              className="flex items-center gap-2"
+              className="flex items-end gap-2"
               onSubmit={(event) => {
                 event.preventDefault();
                 sendPrompt(input);
@@ -564,7 +590,7 @@ export default function AgentPanel({ devices }: AgentPanelProps) {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <input
+              <textarea
                 ref={inputRef}
                 value={input}
                 onChange={(event) => {
@@ -579,24 +605,32 @@ export default function AgentPanel({ devices }: AgentPanelProps) {
                   setCaretPosition(event.currentTarget.selectionStart ?? event.currentTarget.value.length);
                 }}
                 onKeyDown={(event) => {
-                  if (!mentionSuggestions.length) return;
-                  if (event.key === 'ArrowDown') {
-                    event.preventDefault();
-                    setMentionCursor((c) => (c + 1) % mentionSuggestions.length);
-                    return;
+                  if (mentionSuggestions.length) {
+                    if (event.key === 'ArrowDown') {
+                      event.preventDefault();
+                      setMentionCursor((c) => (c + 1) % mentionSuggestions.length);
+                      return;
+                    }
+                    if (event.key === 'ArrowUp') {
+                      event.preventDefault();
+                      setMentionCursor((c) => (c === 0 ? mentionSuggestions.length - 1 : c - 1));
+                      return;
+                    }
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                      const selected = mentionSuggestions[mentionCursor] ?? mentionSuggestions[0];
+                      if (selected) applyMention(selected.id);
+                      return;
+                    }
                   }
-                  if (event.key === 'ArrowUp') {
+
+                  if (event.key === 'Enter' && !event.shiftKey) {
                     event.preventDefault();
-                    setMentionCursor((c) => (c === 0 ? mentionSuggestions.length - 1 : c - 1));
-                    return;
-                  }
-                  if (event.key === 'Enter') {
-                    event.preventDefault();
-                    const selected = mentionSuggestions[mentionCursor] ?? mentionSuggestions[0];
-                    if (selected) applyMention(selected.id);
+                    sendPrompt(input);
                   }
                 }}
-                className="flex-1 bg-transparent text-[13px] outline-none"
+                rows={3}
+                className="min-h-[72px] flex-1 resize-none bg-transparent py-1 text-[13px] leading-relaxed outline-none"
                 placeholder="Ask why a fault happened, request history, or ask to run an action"
               />
               <button

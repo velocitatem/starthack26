@@ -396,4 +396,11 @@ async def bayesian_current() -> BayesianView:
 
 if __name__ == "__main__":
     PORT = int(os.getenv("BACKEND_PORT", 5000))
-    uvicorn.run("server:app", host="0.0.0.0", port=PORT, reload=True)
+    uvicorn.run(
+        "server:app",
+        host="0.0.0.0",
+        port=PORT,
+        reload=True,
+        reload_dirs=["apps/backend/fastapi", "shacklib", "ml"],
+        reload_excludes=[".venv/*", "node_modules/*", ".git/*", "__pycache__/*"],
+    )

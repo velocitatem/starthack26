@@ -196,6 +196,19 @@ export interface AgentChatResponse {
   pendingAction: AgentPendingAction | null;
 }
 
+export interface IssueAlertSelection {
+  device: Device;
+  fault: Fault;
+}
+
+export interface AgentRouteState {
+  seedPrompt: string;
+  seedSource: 'issues-table';
+  seedId: string;
+  focusInput: boolean;
+  autoSubmit: boolean;
+}
+
 export interface NodeFaultHistoryEntry {
   id: string;
   state: 'open' | 'resolved';
