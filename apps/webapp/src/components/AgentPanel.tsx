@@ -98,7 +98,7 @@ export default function AgentPanel({ devices, routeSeed = null, onRouteSeedConsu
   const agentChat = useAgentChat();
   const inputRef = useRef<HTMLInputElement>(null);
   const documentInputRef = useRef<HTMLInputElement>(null);
-  const chatScrollRef = useRef<HTMLDivElement>(null);
+  const chatViewportRef = useRef<HTMLDivElement>(null);
   const nodePickerRef = useRef<HTMLDivElement>(null);
   const consumedRouteSeedIdsRef = useRef<Set<string>>(new Set());
   const documentsQuery = useDocumentsList();
@@ -181,12 +181,13 @@ export default function AgentPanel({ devices, routeSeed = null, onRouteSeedConsu
   }, [mentionContext?.start, mentionContext?.query]);
 
   useEffect(() => {
-    if (!chatScrollRef.current) return;
-    const container = chatScrollRef.current;
-    requestAnimationFrame(() => {
+    if (!chatViewportRef.current) return;
+    const container = chatViewportRef.current;
+    const frame = requestAnimationFrame(() => {
       container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
     });
-  }, [messages, agentChat.isPending, pendingAction?.id]);
+    return () => cancelAnimationFrame(frame);
+  }, [messages, agentChat.isPending, pendingAction?.id, latestToolEvents.length]);
 
   const knownNodeIds = useMemo(
     () => new Set(nodeSuggestions.map((node) => node.id)),
@@ -334,7 +335,7 @@ export default function AgentPanel({ devices, routeSeed = null, onRouteSeedConsu
   return (
     <div className="flex-1 relative flex flex-col overflow-hidden">
       <PageHeader title="Assistant" />
-      <div className="flex-1 overflow-y-auto">
+      <div ref={chatViewportRef} className="flex-1 overflow-y-auto">
 
       <div className="container max-w-3xl space-y-4 pt-6 pb-24">
         <div className="flex flex-wrap gap-2">
@@ -350,7 +351,7 @@ export default function AgentPanel({ devices, routeSeed = null, onRouteSeedConsu
           ))}
         </div>
 
-        <div ref={chatScrollRef} className="space-y-3">
+        <div className="space-y-3">
           {messages.map((message) => (
             <div key={message.id} className={`flex w-full ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div
