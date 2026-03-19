@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { type Device, type Fault } from '@/types/facility';
 import { useResolveFault } from '@/hooks/useFacilityData';
-import { Zap, Check, Loader2 } from 'lucide-react';
+import { AlertOctagon, AlertTriangle, Check, Loader2, type LucideIcon, Siren, Zap } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 
 interface AlertDashboardProps {
@@ -12,6 +12,14 @@ interface AlertDashboardProps {
 interface AlertItem {
   device: Device;
   fault: Fault;
+}
+
+interface SummaryCard {
+  label: string;
+  count: number | string;
+  color: string;
+  text: string;
+  icon: LucideIcon;
 }
 
 const severityOrder: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
@@ -42,30 +50,62 @@ export default function AlertDashboard({ devices, onNavigateToDevice }: AlertDas
     .filter(a => !severityFilter || a.fault.severity === severityFilter)
     .filter(a => !deviceFilter || a.device.id === deviceFilter);
   const totalEnergyWaste = `${alerts.reduce((sum, alert) => sum + parseEnergyWaste(alert.fault.energyWaste), 0).toLocaleString()} kWh/day`;
+  const summaryCards: SummaryCard[] = [
+    {
+      label: 'Critical',
+      count: alerts.filter(a => a.fault.severity === 'critical').length,
+      color: 'border-status-fault/30',
+      text: 'text-status-fault',
+      icon: AlertOctagon,
+    },
+    {
+      label: 'High',
+      count: alerts.filter(a => a.fault.severity === 'high').length,
+      color: 'border-status-warning/30',
+      text: 'text-status-warning',
+      icon: Siren,
+    },
+    {
+      label: 'Medium',
+      count: alerts.filter(a => a.fault.severity === 'medium').length,
+      color: 'border-border',
+      text: 'text-muted-foreground',
+      icon: AlertTriangle,
+    },
+    {
+      label: 'Total Energy Waste',
+      count: totalEnergyWaste,
+      color: 'border-border',
+      text: 'text-foreground',
+      icon: Zap,
+    },
+  ];
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <PageHeader title="Issues" />
       <div className="flex-1 p-6 overflow-y-auto">
 
-      {/* Summary bar */}
-      <div className="grid grid-cols-4 gap-3 mb-6">
-          {[
-            { label: 'Critical', count: alerts.filter(a => a.fault.severity === 'critical').length, color: 'border-status-fault/30', text: 'text-status-fault' },
-            { label: 'High', count: alerts.filter(a => a.fault.severity === 'high').length, color: 'border-status-warning/30', text: 'text-status-warning' },
-            { label: 'Medium', count: alerts.filter(a => a.fault.severity === 'medium').length, color: 'border-border', text: 'text-muted-foreground' },
-            { label: 'Total Energy Waste', count: totalEnergyWaste, color: 'border-border', text: 'text-foreground', wide: true },
-          ].map(s => (
-          <div
-            key={s.label}
-            className={`border bg-card p-4 cursor-pointer shadow-sm hover:shadow-md transition-shadow ${severityFilter === s.label.toLowerCase() ? 'card-accent-top border-foreground' : s.color}`}
-            onClick={() => setSeverityFilter(severityFilter === s.label.toLowerCase() ? null : s.label === 'Total Energy Waste' ? null : s.label.toLowerCase())}
-          >
-            <div className="label-caps">{s.label}</div>
-            <div className={`font-display text-2xl mt-1 ${s.text}`}>{s.count}</div>
-          </div>
-        ))}
-      </div>
+        {/* Summary bar */}
+        <div className="grid grid-cols-4 gap-3 mb-6">
+          {summaryCards.map((s) => {
+            const Icon = s.icon;
+
+            return (
+              <div
+                key={s.label}
+                className={`border bg-card p-4 cursor-pointer shadow-sm hover:shadow-md transition-shadow ${severityFilter === s.label.toLowerCase() ? 'card-accent-top border-foreground' : s.color}`}
+                onClick={() => setSeverityFilter(severityFilter === s.label.toLowerCase() ? null : s.label === 'Total Energy Waste' ? null : s.label.toLowerCase())}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="label-caps">{s.label}</div>
+                  <Icon size={14} className={s.text} />
+                </div>
+                <div className={`font-display text-2xl mt-1 ${s.text}`}>{s.count}</div>
+              </div>
+            );
+          })}
+        </div>
 
       <div className="flex items-center gap-3 mb-6">
         <div className="label-caps shrink-0">Device</div>
