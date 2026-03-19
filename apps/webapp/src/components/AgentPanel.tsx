@@ -7,6 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { type AgentChatMessage, type AgentPendingAction, type AgentToolEvent, type Device } from '@/types/facility';
 import { useAgentChat } from '@/hooks/useAgentChat';
 import { useDeleteDocument, useDocumentsList, useUploadDocument } from '@/hooks/useBuildingDocuments';
+import PageHeader from '@/components/PageHeader';
 
 interface AgentPanelProps {
   devices: Device[];
@@ -209,7 +210,7 @@ export default function AgentPanel({ devices }: AgentPanelProps) {
 
   const runMessageAction = (action: ChatActionButton) => {
     if (action.nodeId && !action.prompt) {
-      navigate(`/issues/${action.nodeId}`);
+      navigate(`/devices/${action.nodeId}`);
       return;
     }
     if (action.prompt) sendPrompt(action.prompt);
@@ -306,9 +307,7 @@ export default function AgentPanel({ devices }: AgentPanelProps) {
 
   return (
     <div className="flex-1 relative flex flex-col overflow-hidden">
-      <div className="px-6 h-16 flex items-center border-b border-border shrink-0">
-        <h1 className="font-display text-base tracking-tight">Operations Agent</h1>
-      </div>
+      <PageHeader title="Assistant" />
       <div className="flex-1 overflow-y-auto">
 
       <div className="container max-w-3xl space-y-4 pt-6 pb-24">
@@ -337,7 +336,7 @@ export default function AgentPanel({ devices }: AgentPanelProps) {
               >
                 <div className="mb-1 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
                   {message.role === 'assistant' ? <Bot size={11} /> : <Send size={11} />}
-                  {message.role}
+                  {message.role === 'assistant' ? 'floxo' : message.role}
                 </div>
                 <MessageMarkdown content={message.content} />
 
@@ -369,7 +368,7 @@ export default function AgentPanel({ devices }: AgentPanelProps) {
           {agentChat.isPending && (
             <div className="inline-flex items-center gap-2 px-3 py-2 text-[12px] bg-muted text-muted-foreground">
               <Loader2 size={13} className="animate-spin" />
-              Agent working...
+              Floxo working...
             </div>
           )}
         </div>

@@ -2,7 +2,6 @@ import { useRef, useState, useCallback, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useGesture } from '@use-gesture/react';
 import { ZoomIn, ZoomOut, Maximize, Play, RotateCcw, Bug, LoaderCircle } from 'lucide-react';
-import { ModeToggle } from '@/components/mode-toggle';
 import PageHeader from '@/components/PageHeader';
 import { type AHUUnit, type Device, type SimulationFailureInput, type SimulationRunResponse } from '@/types/facility';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -1065,8 +1064,7 @@ export default function DatacenterMap({
       },
       onWheel: ({ delta: [, dy], event }) => {
         event.preventDefault();
-        const factor = dy > 0 ? 0.95 : 1.05;
-        setTransform((current) => clampTransform(current.x, current.y, current.scale * factor));
+        setTransform((current) => clampTransform(current.x, current.y, current.scale * Math.pow(2, -dy / 300)));
       },
     },
     {
@@ -1152,7 +1150,6 @@ export default function DatacenterMap({
                 </Tooltip>
               </>
             )}
-            <ModeToggle />
           </>
         }
       />

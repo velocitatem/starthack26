@@ -1,22 +1,18 @@
 import type { UseQueryResult } from '@tanstack/react-query';
 import {
-  Zap, Clock, Wrench, Check, Loader2, Activity, RefreshCw, AlertTriangle, Shield, Server,
+  Zap, Clock, Wrench, Check, Loader2, Activity, AlertTriangle, Shield, Server,
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import DeviceTelemetry from '@/components/TelemetryCharts';
-import type { Device, MlFailureModeResponse, NodeFaultHistoryResponse, TelemetryPoint } from '@/types/facility';
+import type { Device, NodeFaultHistoryResponse, TelemetryPoint } from '@/types/facility';
 
 export interface DeviceDashboardProps {
   device: Device;
   devices: Device[];
   historyByNodeId: Record<string, Record<string, TelemetryPoint[]>>;
-  mlDiagnosis: MlFailureModeResponse | undefined;
-  isMlPending: boolean;
-  mlError: Error | null;
   historyQuery: UseQueryResult<NodeFaultHistoryResponse>;
   pendingFaultId: string | null;
   resolve: (faultId: string) => void;
-  rerunMl: () => void;
 }
 
 const severityBadge: Record<string, string> = {
@@ -33,14 +29,11 @@ const fmtTs = (v: string) => {
 };
 
 export default function DeviceDashboard({
-  device, devices, historyByNodeId, mlDiagnosis, isMlPending, mlError,
-  historyQuery, pendingFaultId, resolve, rerunMl,
+  device, devices, historyByNodeId, historyQuery, pendingFaultId, resolve,
 }: DeviceDashboardProps) {
-  const confidence = mlDiagnosis?.confidence ?? mlDiagnosis?.diagnosis?.probability;
   const openFaults = historyQuery.data?.openFaults ?? device.faults.length;
   const totalFaults = historyQuery.data?.totalFaults ?? 0;
   const anomalyPct = Math.round(device.anomalyScore * 100);
-  const anomalyColor = device.anomalyScore > 0.7 ? 'text-status-fault' : device.anomalyScore > 0.4 ? 'text-status-warning' : 'text-status-healthy';
 
   return (
     <div className="space-y-4">
@@ -50,17 +43,11 @@ export default function DeviceDashboard({
           <span className="font-display text-sm capitalize">{device.status}</span>
         </div>
         <div className="h-4 w-px bg-border" />
-        <span className="font-display text-sm">{anomalyPct}% anomaly</span>
+        <span className="font-display text-sm">{anomalyPct}% deviation</span>
         <div className="h-4 w-px bg-border" />
         <span className="text-[12px]">{openFaults} active fault{openFaults !== 1 ? 's' : ''}</span>
         <div className="h-4 w-px bg-border" />
         <span className="text-[12px] text-muted-foreground">{totalFaults} historical</span>
-        {confidence != null && (
-          <>
-            <div className="h-4 w-px bg-border" />
-            <span className="text-[12px] text-muted-foreground">ML: {Math.round(confidence * 100)}% confidence</span>
-          </>
-        )}
         <div className="ml-auto flex items-center gap-3 text-[11px] text-muted-foreground">
           <Server size={11} />{device.model} · {device.serial}
         </div>
@@ -69,7 +56,6 @@ export default function DeviceDashboard({
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="diagnosis">Diagnosis</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
           <TabsTrigger value="telemetry">Telemetry</TabsTrigger>
         </TabsList>
@@ -80,7 +66,7 @@ export default function DeviceDashboard({
               { label: 'Zone', value: device.zone },
               { label: 'Type', value: device.type, capitalize: true },
               { label: 'Installed', value: device.installedDate },
-              { label: 'Anomaly Score', value: `${anomalyPct}%` },
+              { label: 'Deviation', value: `${anomalyPct}%` },
               { label: 'Energy Waste', value: device.faults[0]?.energyWaste ?? '--' },
             ].map(s => (
               <div key={s.label} className="border border-border bg-card px-3 py-2">
@@ -129,102 +115,6 @@ export default function DeviceDashboard({
               <div className="mt-1 text-[12px] text-muted-foreground">Operating within normal parameters</div>
             </div>
           )}
-
-          {mlDiagnosis?.available && mlDiagnosis.diagnosis && (
-            <div className="border border-border bg-card p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Activity size={13} className="text-brand" />
-                  <span className="text-[13px] font-medium">{mlDiagnosis.className ?? titleCase(mlDiagnosis.diagnosis.kind)}</span>
-                  <span className="text-[11px] text-muted-foreground">({((mlDiagnosis.confidence ?? mlDiagnosis.diagnosis.probability) * 100).toFixed(0)}% confidence)</span>
-                </div>
-                <span className="text-[11px] text-muted-foreground">See Diagnosis tab for full details</span>
-              </div>
-              <div className="mt-2 text-[12px] leading-relaxed text-foreground/90">{mlDiagnosis.diagnosis.summary}</div>
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="diagnosis" className="space-y-4">
-          <div className="border border-border bg-card p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Activity size={14} className="text-brand" />
-                <span className="font-display text-base tracking-tight">ML Failure Mode Analysis</span>
-              </div>
-              <button type="button" onClick={rerunMl} className="inline-flex items-center gap-1 border border-border px-3 py-1.5 text-[11px] text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground">
-                <RefreshCw size={10} />Rerun Model
-              </button>
-            </div>
-
-            {isMlPending && (
-              <div className="flex items-center justify-center gap-2 py-8 text-[13px] text-muted-foreground">
-                <Loader2 size={14} className="animate-spin" />Running failure-mode classification model...
-              </div>
-            )}
-
-            {mlError instanceof Error && (
-              <div className="border border-status-fault/20 bg-status-fault/5 p-4 text-[12px] text-status-fault">Could not run diagnosis ({mlError.message})</div>
-            )}
-
-            {mlDiagnosis && !mlDiagnosis.available && (
-              <div className="border border-status-warning/20 bg-status-warning/5 p-4 text-[12px] text-status-warning">Diagnosis unavailable{mlDiagnosis.error ? `: ${mlDiagnosis.error}` : '.'}</div>
-            )}
-
-            {mlDiagnosis?.available && mlDiagnosis.diagnosis && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="border border-border bg-background/60 p-4">
-                    <div className="label-caps mb-2">Classification</div>
-                    <div className="font-display text-lg">{mlDiagnosis.className ?? titleCase(mlDiagnosis.diagnosis.kind)}</div>
-                    <div className="mt-1 text-[11px] text-muted-foreground capitalize">{mlDiagnosis.diagnosis.status}</div>
-                  </div>
-                  <div className="border border-border bg-background/60 p-4">
-                    <div className="label-caps mb-2">Confidence</div>
-                    <div className="font-display text-3xl">{((mlDiagnosis.confidence ?? mlDiagnosis.diagnosis.probability) * 100).toFixed(0)}%</div>
-                    <div className="h-2 w-full bg-muted mt-2 overflow-hidden">
-                      <div className="h-full" style={{ width: `${(mlDiagnosis.confidence ?? mlDiagnosis.diagnosis.probability) * 100}%`, backgroundColor: 'hsl(var(--brand))' }} />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-4 gap-3">
-                  {[
-                    { label: 'Model Type', value: mlDiagnosis.modelType ?? 'Unknown' },
-                    { label: 'Task', value: mlDiagnosis.task ?? 'Classification' },
-                    { label: 'Raw Prediction', value: mlDiagnosis.prediction != null ? mlDiagnosis.prediction.toFixed(4) : '--' },
-                    { label: 'Generated At', value: fmtTs(mlDiagnosis.generatedAt) },
-                  ].map(m => (
-                    <div key={m.label} className="border border-border bg-background/60 px-3 py-2">
-                      <div className="label-caps">{m.label}</div>
-                      <div className="mt-1 text-[12px] text-foreground">{m.value}</div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="border border-border bg-background/60 p-4">
-                  <div className="label-caps mb-2">Analysis Summary</div>
-                  <div className="text-[13px] leading-relaxed text-foreground/90">{mlDiagnosis.diagnosis.summary}</div>
-                </div>
-
-                <div className="border border-border bg-background/60 p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Wrench size={12} className="text-muted-foreground" />
-                    <span className="label-caps">Recommended Action</span>
-                  </div>
-                  <div className="text-[13px] leading-relaxed text-foreground/90">{mlDiagnosis.diagnosis.recommendedAction}</div>
-                </div>
-
-                <div className="text-[11px] text-muted-foreground">
-                  ML endpoint: <code className="text-foreground/70">{mlDiagnosis.mlUrl}</code>
-                </div>
-              </div>
-            )}
-
-            {!isMlPending && !mlError && !mlDiagnosis && device.faults.length === 0 && (
-              <div className="py-8 text-center text-[13px] text-muted-foreground">No active faults to diagnose. The ML pipeline runs when faults are detected.</div>
-            )}
-          </div>
         </TabsContent>
 
         <TabsContent value="history" className="space-y-4">
@@ -272,7 +162,7 @@ export default function DeviceDashboard({
                     </div>
                     <div className="mt-2 text-[12px] leading-relaxed text-foreground/90">{h.summary}</div>
                     <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
-                      <span className="inline-flex items-center gap-1"><Activity size={10} />{(h.probability * 100).toFixed(0)}% confidence</span>
+                      <span className="inline-flex items-center gap-1"><Activity size={10} />{(h.probability * 100).toFixed(0)}% likelihood</span>
                       <span className="inline-flex items-center gap-1"><Clock size={10} />{fmtTs(h.openedAt)}</span>
                     </div>
                     <div className="mt-2 flex items-start gap-1.5 text-[11px] text-muted-foreground">

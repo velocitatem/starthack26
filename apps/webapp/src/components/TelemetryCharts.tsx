@@ -125,7 +125,7 @@ export default function DeviceTelemetry({
             </span>
           </div>
           <div className="text-[11px] text-muted-foreground mt-0.5">
-            {selectedDevice.type} - {selectedDevice.zone} - Anomaly score: {(selectedDevice.anomalyScore * 100).toFixed(0)}%
+            {selectedDevice.type} - {selectedDevice.zone} - Deviation: {(selectedDevice.anomalyScore * 100).toFixed(0)}%
           </div>
         </div>
       )}

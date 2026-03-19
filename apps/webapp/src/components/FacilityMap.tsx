@@ -2,7 +2,6 @@ import { useRef, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useGesture } from '@use-gesture/react';
 import { ZoomIn, ZoomOut, Maximize } from 'lucide-react';
-import { ModeToggle } from '@/components/mode-toggle';
 import PageHeader from '@/components/PageHeader';
 import { type AHUUnit, type Device, type AirflowDirection } from '@/types/facility';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -65,7 +64,7 @@ const DeviceNode = ({ device, selected, onClick }: { device: Device; selected: b
           <div className="flex items-center gap-1.5 mt-1">
             <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
             <span className="text-[11px] capitalize">{device.status}</span>
-            <span className="text-[11px] text-muted-foreground ml-1">Confidence Anomaly: {formatAnomalyConfidence(device.anomalyScore)}</span>
+            <span className="text-[11px] text-muted-foreground ml-1">Deviation: {formatAnomalyConfidence(device.anomalyScore)}</span>
           </div>
         </div>
       </TooltipContent>
@@ -343,8 +342,7 @@ export default function FacilityMap({ ahuUnits, devices, nodePositions, onDevice
       },
       onWheel: ({ delta: [, dy], event }) => {
         event.preventDefault();
-        const factor = dy > 0 ? 0.95 : 1.05;
-        setTransform(t => clampTransform(t.x, t.y, t.scale * factor));
+        setTransform(t => clampTransform(t.x, t.y, t.scale * Math.pow(2, -dy / 300)));
       },
     },
     {
@@ -364,7 +362,6 @@ export default function FacilityMap({ ahuUnits, devices, nodePositions, onDevice
     <div className="flex-1 flex flex-col overflow-hidden">
       <PageHeader
         title="Facility Overview"
-        actions={<ModeToggle />}
       />
       <div className="flex-1 p-6 flex flex-col overflow-hidden">
 

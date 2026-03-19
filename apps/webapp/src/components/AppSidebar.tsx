@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom';
 import { type BuildingStats } from '@/types/facility';
-import { AlertTriangle, Bot, Map, PanelLeftClose, PanelLeftOpen, type LucideIcon } from 'lucide-react';
+import { AlertTriangle, Bot, Map, PanelLeftClose, PanelLeftOpen, Server, type LucideIcon } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface AppSidebarProps {
-  activeView: 'map' | 'issues' | 'agent';
+  activeView: 'map' | 'issues' | 'devices' | 'agent';
   buildingStats: BuildingStats;
   collapsed: boolean;
   onToggle: () => void;
@@ -74,6 +74,7 @@ export default function AppSidebar({ activeView, buildingStats, collapsed, onTog
       <div className="py-2 border-b border-border">
         <NavItem icon={Map} label="Map" to="/" active={activeView === 'map'} collapsed={collapsed} />
         <NavItem icon={AlertTriangle} label="Issues" to="/issues" active={activeView === 'issues'} collapsed={collapsed} />
+        <NavItem icon={Server} label="Devices" to="/devices" active={activeView === 'devices'} collapsed={collapsed} />
         <NavItem icon={Bot} label="Agent" to="/agent" active={activeView === 'agent'} collapsed={collapsed} />
       </div>
 

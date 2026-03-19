@@ -34,6 +34,7 @@ export default function Layout() {
   }
 
   const activeView = location.pathname.startsWith('/issues') ? 'issues'
+    : location.pathname.startsWith('/devices') ? 'devices'
     : location.pathname.startsWith('/agent') ? 'agent'
     : 'map';
 

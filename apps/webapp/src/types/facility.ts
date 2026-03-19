@@ -217,30 +217,6 @@ export interface NodeFaultHistoryResponse {
   faultHistory: NodeFaultHistoryEntry[];
 }
 
-// -- ML Failure Mode types --
-
-export interface MlFailureModeDiagnosis {
-  status: LiveNodeStatus;
-  kind: string;
-  probability: number;
-  summary: string;
-  recommendedAction: string;
-}
-
-export interface MlFailureModeResponse {
-  nodeId: string;
-  generatedAt: string;
-  mlUrl: string;
-  modelType: string | null;
-  task: string | null;
-  prediction: number | null;
-  className: string | null;
-  confidence: number | null;
-  diagnosis: MlFailureModeDiagnosis | null;
-  available: boolean;
-  error: string | null;
-}
-
 export interface SimulationFailureInput {
   componentId: string;
   mode: string;

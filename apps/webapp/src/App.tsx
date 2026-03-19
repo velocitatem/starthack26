@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Layout from "./pages/Index.tsx";
 import MapPage from "./pages/MapPage.tsx";
 import IssuesPage from "./pages/IssuesPage.tsx";
+import DevicesPage from "./pages/DevicesPage.tsx";
 import DeviceDashboardPage from "./pages/DeviceDashboardPage.tsx";
 import AgentPage from "./pages/AgentPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -24,7 +25,8 @@ const App = () => (
             <Route element={<Layout />}>
               <Route index element={<MapPage />} />
               <Route path="issues" element={<IssuesPage />} />
-              <Route path="issues/:deviceId" element={<DeviceDashboardPage />} />
+              <Route path="devices" element={<DevicesPage />} />
+              <Route path="devices/:deviceId" element={<DeviceDashboardPage />} />
               <Route path="agent" element={<AgentPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />
