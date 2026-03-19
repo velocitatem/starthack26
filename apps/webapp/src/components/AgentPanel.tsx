@@ -798,6 +798,7 @@ export default function AgentPanel({ devices, historyByNodeId = {} }: AgentPanel
                 onClick={(event) => {
                   setCaretPosition(event.currentTarget.selectionStart ?? event.currentTarget.value.length);
                 }}
+                onBlur={() => setCaretPosition(0)}
                 onKeyUp={(event) => {
                   setCaretPosition(event.currentTarget.selectionStart ?? event.currentTarget.value.length);
                 }}
