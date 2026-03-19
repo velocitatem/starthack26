@@ -39,7 +39,7 @@ def test_collect_diagnoses_only_targets_fresh_nodes(monkeypatch):
     state = build_seed_state()
     now_iso = _utc_now_iso()
     state["meta"]["lastIngestAt"] = now_iso
-    state["nodes"]["BEL-VLV-003"]["updatedAt"] = now_iso
+    state["nodes"]["BEL-VNT-003"]["updatedAt"] = now_iso
 
     called_node_ids: list[str] = []
 
@@ -59,8 +59,8 @@ def test_collect_diagnoses_only_targets_fresh_nodes(monkeypatch):
 
     diagnoses, stats = ml_diagnosis.collect_diagnoses(state)
 
-    assert set(diagnoses.keys()) == {"BEL-VLV-003"}
-    assert called_node_ids == ["BEL-VLV-003"]
+    assert set(diagnoses.keys()) == {"BEL-VNT-003"}
+    assert called_node_ids == ["BEL-VNT-003"]
     assert stats["mlPredictions"] == 1
 
 

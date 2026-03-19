@@ -16,14 +16,14 @@ COMPONENT_ID_TO_BAYES_NODE = {
 
 
 DEVICE_ID_TO_COMPONENT = {
-    "BEL-ACT-001": "act_intake",
-    "BEL-DMP-002": "dmp_ab",
-    "BEL-VLV-003": "vlv_ab",
-    "BEL-ACT-004": "act_cd_exhaust",
-    "BEL-VLV-005": "vlv_cd",
-    "BEL-DMP-006": "dmp_ef",
-    "BEL-ACT-007": "act_ef_supply",
-    "BEL-DMP-008": "dmp_outlet",
+    "BEL-VNT-001": "act_intake",
+    "BEL-VNT-002": "dmp_ab",
+    "BEL-VNT-003": "vlv_ab",
+    "BEL-VNT-004": "act_cd_exhaust",
+    "BEL-VNT-005": "vlv_cd",
+    "BEL-VNT-006": "dmp_ef",
+    "BEL-VNT-007": "act_ef_supply",
+    "BEL-VNT-008": "dmp_outlet",
 }
 
 

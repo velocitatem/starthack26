@@ -1,6 +1,6 @@
 export type DeviceStatus = 'healthy' | 'warning' | 'fault' | 'offline';
 export type LiveNodeStatus = 'healthy' | 'warning' | 'critical' | 'offline';
-export type DeviceType = 'actuator' | 'damper' | 'valve';
+export type DeviceType = 'dampener';
 export type AirflowDirection = 'supply' | 'return' | null;
 export type FacilityNodeType = 'system' | 'ahu' | DeviceType;
 

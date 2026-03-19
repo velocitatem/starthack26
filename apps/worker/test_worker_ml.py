@@ -26,12 +26,12 @@ def test_run_classification_uses_ml_failure_modes(monkeypatch):
         for node_id, node in snapshot["nodes"].items()
         if node.get("latestTelemetry")
     }
-    diagnoses["BEL-VLV-003"] = {
+    diagnoses["BEL-VNT-003"] = {
         "status": "critical",
         "kind": "gear_jam_transmission_lock",
         "probability": 0.93,
         "summary": "ML detected transmission lock pattern.",
-        "recommendedAction": "Inspect actuator gearbox and coupling.",
+        "recommendedAction": "Inspect dampener gearbox and coupling.",
     }
 
     monkeypatch.setattr(
@@ -53,7 +53,7 @@ def test_run_classification_uses_ml_failure_modes(monkeypatch):
     assert summary["mlPredictions"] > 0
     assert summary["fallbackPredictions"] == 0
 
-    node = live_state["nodes"]["BEL-VLV-003"]
+    node = live_state["nodes"]["BEL-VNT-003"]
     assert node["status"] == "critical"
     assert isinstance(node.get("latestFaultId"), str)
 

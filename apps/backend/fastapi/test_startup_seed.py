@@ -22,8 +22,7 @@ def _device_nodes(state: dict) -> list[dict]:
     return [
         node
         for node in nodes.values()
-        if isinstance(node, dict)
-        and str(node.get("type") or "") in {"actuator", "damper", "valve"}
+        if isinstance(node, dict) and str(node.get("type") or "") in {"dampener"}
     ]
 
 

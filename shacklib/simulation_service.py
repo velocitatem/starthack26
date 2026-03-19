@@ -19,14 +19,14 @@ from ml.simulation import (
 
 
 COMPONENT_TO_DEVICE_ID = {
-    "act_intake": "BEL-ACT-001",
-    "dmp_ab": "BEL-DMP-002",
-    "vlv_ab": "BEL-VLV-003",
-    "act_cd_exhaust": "BEL-ACT-004",
-    "vlv_cd": "BEL-VLV-005",
-    "dmp_ef": "BEL-DMP-006",
-    "act_ef_supply": "BEL-ACT-007",
-    "dmp_outlet": "BEL-DMP-008",
+    "act_intake": "BEL-VNT-001",
+    "dmp_ab": "BEL-VNT-002",
+    "vlv_ab": "BEL-VNT-003",
+    "act_cd_exhaust": "BEL-VNT-004",
+    "vlv_cd": "BEL-VNT-005",
+    "dmp_ef": "BEL-VNT-006",
+    "act_ef_supply": "BEL-VNT-007",
+    "dmp_outlet": "BEL-VNT-008",
 }
 
 DEVICE_TO_COMPONENT_ID = {
@@ -565,9 +565,9 @@ def _build_node_positions_timeline(
 
         timeline.append(
             {
-                "BEL-ACT-001": _scale_position(
+                "BEL-VNT-001": _scale_position(
                     status_node_positions,
-                    "BEL-ACT-001",
+                    "BEL-VNT-001",
                     (
                         factors["zone_ab_supply"]
                         + factors["zone_cd_supply"]
@@ -575,27 +575,27 @@ def _build_node_positions_timeline(
                     )
                     / 3.0,
                 ),
-                "BEL-VLV-003": _scale_position(
-                    status_node_positions, "BEL-VLV-003", factors["zone_ab_supply"]
+                "BEL-VNT-003": _scale_position(
+                    status_node_positions, "BEL-VNT-003", factors["zone_ab_supply"]
                 ),
-                "BEL-VLV-005": _scale_position(
-                    status_node_positions, "BEL-VLV-005", factors["zone_cd_supply"]
+                "BEL-VNT-005": _scale_position(
+                    status_node_positions, "BEL-VNT-005", factors["zone_cd_supply"]
                 ),
-                "BEL-ACT-007": _scale_position(
-                    status_node_positions, "BEL-ACT-007", factors["zone_ef_supply"]
+                "BEL-VNT-007": _scale_position(
+                    status_node_positions, "BEL-VNT-007", factors["zone_ef_supply"]
                 ),
-                "BEL-DMP-002": _scale_position(
-                    status_node_positions, "BEL-DMP-002", factors["zone_ab_exhaust"]
+                "BEL-VNT-002": _scale_position(
+                    status_node_positions, "BEL-VNT-002", factors["zone_ab_exhaust"]
                 ),
-                "BEL-ACT-004": _scale_position(
-                    status_node_positions, "BEL-ACT-004", factors["zone_cd_exhaust"]
+                "BEL-VNT-004": _scale_position(
+                    status_node_positions, "BEL-VNT-004", factors["zone_cd_exhaust"]
                 ),
-                "BEL-DMP-006": _scale_position(
-                    status_node_positions, "BEL-DMP-006", factors["zone_ef_exhaust"]
+                "BEL-VNT-006": _scale_position(
+                    status_node_positions, "BEL-VNT-006", factors["zone_ef_exhaust"]
                 ),
-                "BEL-DMP-008": _scale_position(
+                "BEL-VNT-008": _scale_position(
                     status_node_positions,
-                    "BEL-DMP-008",
+                    "BEL-VNT-008",
                     (
                         factors["zone_ab_exhaust"]
                         + factors["zone_cd_exhaust"]

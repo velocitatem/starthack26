@@ -47,8 +47,8 @@ FIELD_MAP = {
 CLASS_ORDER = ["normal", "stabbing", "bottle_stuck", "gear_stuck", "resistance"]
 
 PHASE_BINS = 120
-DEFAULT_NODE_ID = "BEL-VLV-003"
-DEFAULT_DEVICE_TYPE = "valve"
+DEFAULT_NODE_ID = "BEL-VNT-003"
+DEFAULT_DEVICE_TYPE = "dampener"
 DEFAULT_PARENT_IDS = ["ahu-01"]
 DEFAULT_PROFILE = "gear_stuck"
 DEFAULT_SPEED = 1.0

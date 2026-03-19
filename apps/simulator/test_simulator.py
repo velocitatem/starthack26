@@ -97,9 +97,9 @@ def test_representative_row_is_deterministic_and_bounded():
 
 def test_row_to_payload_maps_fields():
     row = np.array([55.0, 60.0, -0.8, 27.2, 0.15, 1.0])
-    payload = row_to_payload(row, "TEST-001", "valve", ["ahu-01"])
+    payload = row_to_payload(row, "TEST-001", "dampener", ["ahu-01"])
     assert payload["nodeId"] == "TEST-001"
-    assert payload["deviceType"] == "valve"
+    assert payload["deviceType"] == "dampener"
     assert payload["parentIds"] == ["ahu-01"]
     assert "timestamp" in payload
     tel = payload["telemetry"]

@@ -20,21 +20,21 @@ _NORMAL_CLASS_NAMES = {
 _FAILURE_MODE_MAP = {
     "Valve Destabilization (Repeated Poking)": {
         "status": "warning",
-        "kind": "valve_destabilization",
-        "summary": "Valve position is oscillating and control is unstable.",
-        "recommendedAction": "Inspect control loop tuning and valve linkage for repeated hunting.",
+        "kind": "dampener_destabilization",
+        "summary": "Dampener position is oscillating and control is unstable.",
+        "recommendedAction": "Inspect control loop tuning and dampener linkage for repeated hunting.",
     },
     "Closure Blockage (Bottle Held Open)": {
         "status": "critical",
         "kind": "closure_blockage",
-        "summary": "Valve or damper cannot fully close and appears physically blocked.",
+        "summary": "Dampener cannot fully close and appears physically blocked.",
         "recommendedAction": "Inspect for obstruction and verify full travel at closed setpoint.",
     },
     "Gear Jam / Transmission Lock": {
         "status": "critical",
         "kind": "gear_jam_transmission_lock",
-        "summary": "Actuator transmission behavior matches a potential gear jam.",
-        "recommendedAction": "Isolate actuator and inspect gearbox and transmission coupling.",
+        "summary": "Dampener transmission behavior matches a potential gear jam.",
+        "recommendedAction": "Isolate dampener and inspect gearbox and transmission coupling.",
     },
     "Added Mechanical Resistance": {
         "status": "warning",
@@ -46,8 +46,12 @@ _FAILURE_MODE_MAP = {
         "status": "warning",
         "kind": "anomaly_detected",
         "summary": "Telemetry pattern deviates from learned normal operation.",
-        "recommendedAction": "Inspect the actuator and validate commissioning parameters.",
+        "recommendedAction": "Inspect the dampener and validate commissioning parameters.",
     },
+}
+
+_DISPLAY_CLASS_NAME_MAP = {
+    "Valve Destabilization (Repeated Poking)": "Dampener Destabilization (Repeated Poking)",
 }
 
 
@@ -389,7 +393,7 @@ def diagnosis_from_prediction(
             "status": "warning",
             "kind": "ml_detected_fault",
             "summary": f"ML model detected fault pattern: {summary_label}.",
-            "recommendedAction": "Inspect actuator behavior and validate commissioning parameters.",
+            "recommendedAction": "Inspect dampener behavior and validate commissioning parameters.",
         }
 
     probability = confidence if confidence is not None else 0.65
@@ -424,6 +428,11 @@ def infer_failure_mode_for_node(
     )
 
     class_name = _normalize_class_name(payload.get("class_name"))
+    display_class_name = (
+        _DISPLAY_CLASS_NAME_MAP.get(class_name, class_name)
+        if class_name is not None
+        else None
+    )
     confidence = _confidence(payload.get("prediction"), payload.get("probabilities"))
 
     prediction = payload.get("prediction")
@@ -435,7 +444,7 @@ def infer_failure_mode_for_node(
         "modelType": payload.get("model_type"),
         "task": payload.get("task"),
         "prediction": normalized_prediction,
-        "className": class_name,
+        "className": display_class_name,
         "confidence": confidence,
         "diagnosis": diagnosis_from_prediction(payload),
         "raw": payload,

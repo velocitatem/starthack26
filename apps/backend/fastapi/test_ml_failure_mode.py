@@ -32,19 +32,19 @@ def test_ml_failure_mode_endpoint_returns_mapped_diagnosis(monkeypatch):
                 "status": "critical",
                 "kind": "gear_jam_transmission_lock",
                 "probability": 0.92,
-                "summary": "Actuator transmission behavior matches a potential gear jam.",
-                "recommendedAction": "Isolate actuator and inspect gearbox and transmission coupling.",
+                "summary": "Dampener transmission behavior matches a potential gear jam.",
+                "recommendedAction": "Isolate dampener and inspect gearbox and transmission coupling.",
             },
         }
 
     monkeypatch.setattr(server, "infer_failure_mode_for_node", _fake_infer)
 
     with TestClient(server.app) as client:
-        response = client.post("/api/ml/failure-mode", json={"nodeId": "BEL-VLV-003"})
+        response = client.post("/api/ml/failure-mode", json={"nodeId": "BEL-VNT-003"})
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["nodeId"] == "BEL-VLV-003"
+    assert payload["nodeId"] == "BEL-VNT-003"
     assert payload["modelType"] == "xgboost"
     assert payload["className"] == "Gear Jam / Transmission Lock"
     assert payload["available"] is True
@@ -60,7 +60,7 @@ def test_ml_failure_mode_endpoint_returns_unavailable_when_ml_fails(monkeypatch)
     monkeypatch.setattr(server, "infer_failure_mode_for_node", _raise)
 
     with TestClient(server.app) as client:
-        response = client.post("/api/ml/failure-mode", json={"nodeId": "BEL-VLV-003"})
+        response = client.post("/api/ml/failure-mode", json={"nodeId": "BEL-VNT-003"})
 
     assert response.status_code == 200
     payload = response.json()

@@ -62,9 +62,7 @@ _ZONE_TO_AHU = {
 }
 
 _DEVICE_TYPE_PREFIX = {
-    "actuator": "ACT",
-    "damper": "DMP",
-    "valve": "VLV",
+    "dampener": "VNT",
 }
 
 _PROFILE_CACHE: tuple[str | None, dict[str, np.ndarray]] | None = None
@@ -266,13 +264,13 @@ def _build_fault(
     if severity == "severe":
         probability = _clamp(round(0.9 + (index % 4) * 0.02, 2), 0.5, 0.99)
         kind = "signal_loss"
-        summary = "Control signal quality is critically low and actuator response is unstable."
+        summary = "Control signal quality is critically low and dampener response is unstable."
         action = "Inspect wiring and communication bus integrity immediately."
     else:
         probability = _clamp(round(0.67 + (index % 5) * 0.03, 2), 0.5, 0.99)
         kind = "high_torque_anomaly"
         summary = "Torque trend is consistently above expected operating range."
-        action = "Inspect linkage and recalibrate the actuator stroke."
+        action = "Inspect linkage and recalibrate dampener travel."
 
     return {
         "id": fault_id,

@@ -126,7 +126,7 @@ def _tool_definitions() -> list[dict[str, Any]]:
                 "properties": {
                     "nodeId": {
                         "type": "string",
-                        "description": "Exact node/device id, for example BEL-VLV-003",
+                        "description": "Exact node/device id, for example BEL-VNT-003",
                     }
                 },
                 "required": ["nodeId"],
@@ -142,7 +142,7 @@ def _tool_definitions() -> list[dict[str, Any]]:
                 "properties": {
                     "nodeId": {
                         "type": "string",
-                        "description": "Exact node/device id, for example BEL-VLV-003",
+                        "description": "Exact node/device id, for example BEL-VNT-003",
                     },
                     "limit": {
                         "type": "integer",
@@ -188,7 +188,7 @@ def _tool_definitions() -> list[dict[str, Any]]:
                 "properties": {
                     "nodeId": {
                         "type": "string",
-                        "description": "Exact node/device id, for example BEL-VLV-003",
+                        "description": "Exact node/device id, for example BEL-VNT-003",
                     }
                 },
                 "required": ["nodeId"],

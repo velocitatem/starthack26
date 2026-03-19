@@ -45,13 +45,13 @@ def default_scenarios(duration_s: float = 900.0) -> dict[str, ScenarioDefinition
         ),
         "dmp_ef_stuck": ScenarioDefinition(
             name="dmp_ef_stuck",
-            description="Row E/F exhaust damper stuck closed",
+            description="Row E/F exhaust dampener stuck closed",
             duration_s=duration_s,
             failures=[FailureEvent(component_id="dmp_ef", mode="stuck", severity=0.95)],
         ),
         "compound_ef_cd": ScenarioDefinition(
             name="compound_ef_cd",
-            description="E/F exhaust damper stuck and C/D supply valve jammed",
+            description="E/F exhaust dampener stuck and C/D supply dampener jammed",
             duration_s=duration_s,
             failures=[
                 FailureEvent(component_id="dmp_ef", mode="stuck", severity=0.95),
@@ -65,7 +65,7 @@ def default_scenarios(duration_s: float = 900.0) -> dict[str, ScenarioDefinition
         ),
         "intake_resistance": ScenarioDefinition(
             name="intake_resistance",
-            description="Intake actuator develops added mechanical resistance",
+            description="Intake dampener develops added mechanical resistance",
             duration_s=duration_s,
             failures=[
                 FailureEvent(

@@ -45,8 +45,8 @@ def test_status_endpoint_returns_aggregate_payload(monkeypatch):
     } <= payload.keys()
     assert all("position" in node for node in payload["nodes"])
     assert len(payload["derived"]["devices"]) == 8
-    assert payload["derived"]["devices"][0]["id"] == "BEL-ACT-001"
-    assert payload["derived"]["devices"][0]["name"] == "South Intake Actuator"
+    assert payload["derived"]["devices"][0]["id"] == "BEL-VNT-001"
+    assert payload["derived"]["devices"][0]["name"] == "South Intake Dampener"
     assert payload["catalog"]["ahuUnits"][0]["label"] == "SFA-01"
 
 
@@ -71,9 +71,9 @@ def test_ingest_node_appends_and_overwrites_history_points():
     ingest_node(
         state,
         {
-            "nodeId": "BEL-ACT-001",
+            "nodeId": "BEL-VNT-001",
             "timestamp": "2026-03-19T10:00:00Z",
-            "deviceType": "actuator",
+            "deviceType": "dampener",
             "parentIds": ["ahu-01"],
             "telemetry": {
                 "torque": 9.1,
@@ -85,9 +85,9 @@ def test_ingest_node_appends_and_overwrites_history_points():
     ingest_node(
         state,
         {
-            "nodeId": "BEL-ACT-001",
+            "nodeId": "BEL-VNT-001",
             "timestamp": "2026-03-19T10:00:00Z",
-            "deviceType": "actuator",
+            "deviceType": "dampener",
             "parentIds": ["ahu-01"],
             "telemetry": {
                 "torque": 8.4,
@@ -98,8 +98,8 @@ def test_ingest_node_appends_and_overwrites_history_points():
     )
 
     payload = build_status_payload(state)
-    torque_history = payload["historyByNodeId"]["BEL-ACT-001"]["torque"]
-    position_history = payload["historyByNodeId"]["BEL-ACT-001"]["position_percent"]
+    torque_history = payload["historyByNodeId"]["BEL-VNT-001"]["torque"]
+    position_history = payload["historyByNodeId"]["BEL-VNT-001"]["position_percent"]
 
     matching_torque_points = [
         point for point in torque_history if point["time"] == "2026-03-19T10:00:00Z"
@@ -108,7 +108,7 @@ def test_ingest_node_appends_and_overwrites_history_points():
     assert len(matching_torque_points) == 1
     assert matching_torque_points[0]["value"] == 8.4
     assert position_history[-1]["value"] == 68.0
-    assert payload["derived"]["nodePositions"]["BEL-ACT-001"] == 0.68
+    assert payload["derived"]["nodePositions"]["BEL-VNT-001"] == 0.68
 
 
 def test_derived_data_stays_consistent_with_devices_and_nodes():

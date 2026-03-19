@@ -102,7 +102,7 @@ services:
       dockerfile: ./docker/simulator.Dockerfile
     environment:
       - SIM_BACKEND_URL=http://backend-fastapi:5000
-      - SIM_NODE_ID=${SIM_NODE_ID:-BEL-VLV-003}
+      - SIM_NODE_ID=${SIM_NODE_ID:-BEL-VNT-003}
       - SIM_PROFILE=${SIM_PROFILE:-gear_stuck}
       - SIM_SPEED=${SIM_SPEED:-1.0}
       - SIM_LOOP=${SIM_LOOP:-1}

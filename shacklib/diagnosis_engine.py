@@ -207,12 +207,12 @@ def _classify_node(node: dict[str, Any]) -> dict[str, Any] | None:
     temperature = _as_float(telemetry.get("temperature"))
     signal = _as_float(telemetry.get("signal"))
 
-    if node_type == "actuator" and torque is not None and torque >= 22:
+    if node_type == "dampener" and torque is not None and torque >= 22:
         return {
             "status": "critical",
             "kind": "stiction_suspected",
             "probability": _clamp_probability(0.85 + (torque - 22) * 0.02),
-            "summary": "Actuator movement is irregular and torque is elevated.",
+            "summary": "Dampener movement is irregular and torque is elevated.",
             "recommendedAction": "Inspect for mechanical binding.",
         }
 
@@ -222,7 +222,7 @@ def _classify_node(node: dict[str, Any]) -> dict[str, Any] | None:
             "kind": "high_torque_anomaly",
             "probability": _clamp_probability(0.72 + (torque - 16) * 0.03),
             "summary": "Torque is above expected range.",
-            "recommendedAction": "Inspect linkage and valve stem.",
+            "recommendedAction": "Inspect linkage and dampener drive.",
         }
 
     if temperature is not None and temperature >= 52:
@@ -231,7 +231,7 @@ def _classify_node(node: dict[str, Any]) -> dict[str, Any] | None:
             "kind": "temperature_drift",
             "probability": _clamp_probability(0.7 + (temperature - 52) * 0.01),
             "summary": "Device temperature is above expected operating range.",
-            "recommendedAction": "Check thermal load and actuator duty cycle.",
+            "recommendedAction": "Check thermal load and dampener duty cycle.",
         }
 
     if signal is not None and signal <= 0.2:

@@ -6,9 +6,9 @@ from pydantic import BaseModel, Field, model_validator
 NodeStatus = Literal["healthy", "warning", "critical", "offline"]
 DeviceStatus = Literal["healthy", "warning", "fault", "offline"]
 FaultState = Literal["open", "resolved"]
-DeviceType = Literal["actuator", "damper", "valve"]
+DeviceType = Literal["dampener"]
 AirflowDirection = Literal["supply", "return"] | None
-FacilityNodeType = Literal["system", "ahu", "actuator", "damper", "valve", "device"]
+FacilityNodeType = Literal["system", "ahu", "dampener", "device"]
 
 
 class IngestPayload(BaseModel):

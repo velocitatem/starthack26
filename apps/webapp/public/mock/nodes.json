@@ -20,27 +20,27 @@
       "fault": null
     },
     {
-      "id": "BEL-ACT-001",
-      "label": "Kitchen Supply Actuator",
-      "type": "actuator",
+      "id": "BEL-VNT-001",
+      "label": "Kitchen Supply Dampener",
+      "type": "dampener",
       "status": "healthy",
       "position": 0.95,
       "parentIds": ["ahu-01"],
       "fault": null
     },
     {
-      "id": "BEL-DMP-002",
-      "label": "Kitchen Exhaust Damper",
-      "type": "damper",
+      "id": "BEL-VNT-002",
+      "label": "Kitchen Exhaust Dampener",
+      "type": "dampener",
       "status": "healthy",
       "position": 0,
       "parentIds": ["ahu-01"],
       "fault": null
     },
     {
-      "id": "BEL-VLV-003",
-      "label": "Living Room Chiller Valve",
-      "type": "valve",
+      "id": "BEL-VNT-003",
+      "label": "Living Room Supply Dampener",
+      "type": "dampener",
       "status": "critical",
       "position": 0.12,
       "parentIds": ["ahu-01"],
@@ -49,14 +49,14 @@
         "state": "open",
         "kind": "stiction_suspected",
         "probability": 0.91,
-        "summary": "Torque signature shows mechanical binding at 45 degree position and the valve is lagging the setpoint.",
-        "recommendedAction": "Inspect actuator assembly for debris or gear wear and replace the assembly if needed."
+        "summary": "Torque signature shows mechanical binding at 45 degree position and the dampener response is lagging the setpoint.",
+        "recommendedAction": "Inspect the dampener drive assembly for debris or gear wear and replace it if needed."
       }
     },
     {
-      "id": "BEL-ACT-004",
-      "label": "Living Room Damper Actuator",
-      "type": "actuator",
+      "id": "BEL-VNT-004",
+      "label": "Living Room Return Dampener",
+      "type": "dampener",
       "status": "warning",
       "position": 0.88,
       "parentIds": ["ahu-01"],
@@ -70,43 +70,43 @@
       }
     },
     {
-      "id": "BEL-VLV-005",
-      "label": "Bathroom Water Valve",
-      "type": "valve",
+      "id": "BEL-VNT-005",
+      "label": "Bathroom Exhaust Dampener",
+      "type": "dampener",
       "status": "warning",
       "position": 0,
       "parentIds": ["ahu-02"],
       "fault": {
         "id": "fault-005",
         "state": "open",
-        "kind": "oversized_valve",
+        "kind": "oversized_dampener",
         "probability": 0.52,
-        "summary": "The valve is consistently operating below 30 percent open, indicating oversizing for the current load.",
-        "recommendedAction": "Review valve sizing and consider a smaller valve to reduce hunting behavior."
+        "summary": "The dampener is consistently operating below 30 percent capacity, indicating oversizing for the current load.",
+        "recommendedAction": "Review dampener sizing and consider a smaller unit to reduce hunting behavior."
       }
     },
     {
-      "id": "BEL-DMP-006",
-      "label": "Bedroom 1 Supply Damper",
-      "type": "damper",
+      "id": "BEL-VNT-006",
+      "label": "Bedroom 1 Supply Dampener",
+      "type": "dampener",
       "status": "healthy",
       "position": 1.0,
       "parentIds": ["ahu-02"],
       "fault": null
     },
     {
-      "id": "BEL-ACT-007",
-      "label": "Bedroom 1 Return Actuator",
-      "type": "actuator",
+      "id": "BEL-VNT-007",
+      "label": "Bedroom 1 Return Dampener",
+      "type": "dampener",
       "status": "healthy",
       "position": 0.08,
       "parentIds": ["ahu-02"],
       "fault": null
     },
     {
-      "id": "BEL-DMP-008",
-      "label": "Bedroom 2 Fresh Air Damper",
-      "type": "damper",
+      "id": "BEL-VNT-008",
+      "label": "Bedroom 2 Fresh Air Dampener",
+      "type": "dampener",
       "status": "healthy",
       "position": 0.42,
       "parentIds": ["ahu-02"],

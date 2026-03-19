@@ -24,40 +24,14 @@ const statusColor: Record<string, string> = {
 
 const formatAnomalyConfidence = (value: number) => `${Math.round(value * 100)}%`;
 
-// Icons drawn centered on (0,0), fitting within r≈7 — translate to device position via parent <g>
-const DeviceIconSVG = ({ type, color }: { type: string; color: string }) => {
-  switch (type) {
-    case 'actuator': // handwheel — ring + 4 spokes + filled hub
-      return (
-        <g stroke={color} strokeWidth={1.5} strokeLinecap="round">
-          <circle r={5.5} fill="none" />
-          <line x1={0} y1={-5.5} x2={0} y2={-2.5} />
-          <line x1={5.5} y1={0} x2={2.5} y2={0} />
-          <line x1={0} y1={5.5} x2={0} y2={2.5} />
-          <line x1={-5.5} y1={0} x2={-2.5} y2={0} />
-          <circle r={2} fill={color} stroke="none" />
-        </g>
-      );
-    case 'damper': // duct cross-section with single angled blade
-      return (
-        <g stroke={color} strokeWidth={1.5} strokeLinecap="round">
-          <rect x={-5.5} y={-4} width={11} height={8} rx={0.5} fill="none" />
-          <line x1={-3.5} y1={3} x2={3.5} y2={-3} />
-        </g>
-      );
-    case 'valve': // bow-tie body + stem + crossbar handle
-      return (
-        <g stroke={color} strokeLinecap="round" strokeLinejoin="round">
-          <path d="M-5,-3 L0,1 L-5,5 Z" fill={color} strokeWidth={0.5} />
-          <path d="M5,-3 L0,1 L5,5 Z" fill={color} strokeWidth={0.5} />
-          <line x1={0} y1={1} x2={0} y2={-5} strokeWidth={1.5} />
-          <line x1={-2.5} y1={-5} x2={2.5} y2={-5} strokeWidth={2} />
-        </g>
-      );
-    default:
-      return null;
-  }
-};
+const DeviceIconSVG = ({ color }: { color: string }) => (
+  <g transform="translate(-6,-6)">
+    <rect x="0.5" y="4.8" width="11" height="2.4" rx="0.5" transform="rotate(-45 6 6)" fill="none" stroke={color} strokeWidth="0.9" />
+    <circle cx="6" cy="6" r="2.2" fill="none" stroke={color} strokeWidth="0.9" />
+    <circle cx="6" cy="6" r="1.1" fill="none" stroke={color} strokeWidth="0.7" />
+    <circle cx="6" cy="6" r="0.4" fill={color} />
+  </g>
+);
 
 const DeviceNode = ({ device, selected, onClick }: { device: Device; selected: boolean; onClick: () => void }) => {
   const color = `hsl(${statusColor[device.status]})`;
@@ -80,7 +54,7 @@ const DeviceNode = ({ device, selected, onClick }: { device: Device; selected: b
           <circle cx={device.x} cy={device.y} r={12} fill="hsl(var(--card))" stroke="none" />
           <circle cx={device.x} cy={device.y} r={12} fill={`hsl(${statusColor[device.status]} / 0.15)`} stroke={color} strokeWidth={1.5} />
           <g transform={`translate(${device.x},${device.y})`}>
-            <DeviceIconSVG type={device.type} color={color} />
+            <DeviceIconSVG color={color} />
           </g>
         </motion.g>
       </TooltipTrigger>
@@ -100,15 +74,15 @@ const DeviceNode = ({ device, selected, onClick }: { device: Device; selected: b
 };
 
 const ductConnections = [
-  { targetId: 'BEL-ACT-001', d: 'M 310 240 L 240 240 L 240 210 L 160 210' },
-  { targetId: 'BEL-DMP-002', d: 'M 310 240 L 200 240 L 200 100 L 80 100' },
-  { targetId: 'BEL-VLV-003', d: 'M 310 240 L 420 240 L 420 100 L 550 100' },
-  { targetId: 'BEL-ACT-004', d: 'M 310 240 L 500 240 L 500 200 L 700 200' },
+  { targetId: 'BEL-VNT-001', d: 'M 310 240 L 240 240 L 240 210 L 160 210' },
+  { targetId: 'BEL-VNT-002', d: 'M 310 240 L 200 240 L 200 100 L 80 100' },
+  { targetId: 'BEL-VNT-003', d: 'M 310 240 L 420 240 L 420 100 L 550 100' },
+  { targetId: 'BEL-VNT-004', d: 'M 310 240 L 500 240 L 500 200 L 700 200' },
   { targetId: 'ahu-02', d: 'M 310 260 L 310 370 L 460 370' },
-  { targetId: 'BEL-VLV-005', d: 'M 460 370 L 200 370 L 200 380 L 100 380' },
-  { targetId: 'BEL-DMP-006', d: 'M 460 370 L 580 370 L 580 450 L 700 450' },
-  { targetId: 'BEL-ACT-007', d: 'M 460 370 L 580 370 L 580 550 L 750 550' },
-  { targetId: 'BEL-DMP-008', d: 'M 460 390 L 460 520 L 350 520' },
+  { targetId: 'BEL-VNT-005', d: 'M 460 370 L 200 370 L 200 380 L 100 380' },
+  { targetId: 'BEL-VNT-006', d: 'M 460 370 L 580 370 L 580 450 L 700 450' },
+  { targetId: 'BEL-VNT-007', d: 'M 460 370 L 580 370 L 580 550 L 750 550' },
+  { targetId: 'BEL-VNT-008', d: 'M 460 390 L 460 520 L 350 520' },
 ];
 
 const AnimatedDuct = ({ id, d, flow }: { id: string; d: string; flow: number }) => (
@@ -428,15 +402,11 @@ export default function FacilityMap({ ahuUnits, devices, nodePositions, onDevice
               <span className="capitalize">{s}</span>
             </span>
           ))}
-          <span className="border-l border-border pl-3 flex items-center gap-2.5">
-            {(['actuator', 'damper', 'valve'] as const).map((type, i) => (
-              <span key={type} className="flex items-center gap-1">
-                <svg width={14} height={14} viewBox="-7 -7 14 14">
-                  <DeviceIconSVG type={type} color="currentColor" />
-                </svg>
-                <span>{['Act', 'Dmp', 'Vlv'][i]}</span>
-              </span>
-            ))}
+          <span className="border-l border-border pl-3 flex items-center gap-1">
+            <svg width={14} height={14} viewBox="-7 -7 14 14">
+              <DeviceIconSVG color="currentColor" />
+            </svg>
+            <span>Vent</span>
           </span>
           <span className="border-l border-border pl-3 flex items-center gap-2">
             <span className="flex items-center gap-1">
