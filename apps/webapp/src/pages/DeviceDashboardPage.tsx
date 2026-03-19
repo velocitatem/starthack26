@@ -1,7 +1,14 @@
 import { useParams, useOutletContext, Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
 import DeviceTelemetry from '@/components/TelemetryCharts';
 import PageHeader from '@/components/PageHeader';
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbSeparator,
+  BreadcrumbPage,
+} from '@/components/ui/breadcrumb';
 import { type FacilityContext } from '@/types/facility';
 
 export default function DeviceDashboardPage() {
@@ -12,15 +19,26 @@ export default function DeviceDashboardPage() {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <PageHeader
-        title={device?.name ?? deviceId ?? 'Unknown Device'}
-        subtitle={device ? `${device.id} - ${device.type} - ${device.zone}` : 'Device not found'}
-        actions={
-          <Link to="/issues" className="inline-flex items-center gap-1.5 border border-border px-3 py-1.5 text-[12px] text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft size={12} />
-            Back to Issues
-          </Link>
+        title={
+          <Breadcrumb>
+            <BreadcrumbList className="text-base font-display tracking-tight">
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link to="/issues">Issues</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>{device?.name ?? deviceId ?? 'Unknown'}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
         }
       />
+      <div className="px-6 pb-3">
+        <h2 className="font-display text-lg tracking-tight">{device?.name ?? deviceId ?? 'Unknown Device'}</h2>
+        {device && <p className="text-[11px] text-muted-foreground mt-0.5">{device.id} · {device.type} · {device.zone}</p>}
+      </div>
       <div className="flex-1 p-6 overflow-y-auto">
         {device ? (
           <DeviceTelemetry

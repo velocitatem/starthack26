@@ -306,15 +306,12 @@ export default function AgentPanel({ devices }: AgentPanelProps) {
 
   return (
     <div className="flex-1 relative flex flex-col overflow-hidden">
-      <div className="flex-1 overflow-y-auto">
-      <div className="px-6 py-4">
-        <h1 className="font-display text-sm tracking-tight">Operations Agent</h1>
-        <p className="text-[11px] text-muted-foreground mt-0.5">
-          {topFault ? `${topFault.device.id} - ${topFault.device.name}` : 'Diagnosis, fault history, and approved actions.'}
-        </p>
+      <div className="px-6 h-16 flex items-center border-b border-border shrink-0">
+        <h1 className="font-display text-base tracking-tight">Operations Agent</h1>
       </div>
+      <div className="flex-1 overflow-y-auto">
 
-      <div className="container max-w-3xl space-y-4 pb-24">
+      <div className="container max-w-3xl space-y-4 pt-6 pb-24">
         <div className="flex flex-wrap gap-2">
           {quickPrompts.map((prompt) => (
             <button

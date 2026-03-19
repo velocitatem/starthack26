@@ -1012,7 +1012,6 @@ export default function DatacenterMap({
     <div className="flex-1 flex flex-col overflow-hidden">
       <PageHeader
         title="Datacenter Overview"
-        subtitle={`Rows A-F · ${devices.length} devices`}
         actions={
           <>
             <Tooltip>
@@ -1104,6 +1103,12 @@ export default function DatacenterMap({
               <Maximize size={14} />
             </button>
           </div>
+
+          {simulationStep === null && (
+            <div className="absolute top-3 left-3 z-10 text-[10px] text-muted-foreground font-display bg-card/90 px-2 py-1 border border-border rounded-md shadow-sm">
+              Rows A-F · {devices.length} devices
+            </div>
+          )}
 
           {simulationStep !== null && showSimulationDebug && (
             <div className="absolute top-3 left-3 z-10 w-[350px] max-w-[calc(100%-120px)] bg-card/95 border border-border rounded-md px-3 py-2 shadow-sm">

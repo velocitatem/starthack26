@@ -59,9 +59,9 @@ export default function AppSidebar({ activeView, buildingStats, collapsed, onTog
       className={`${collapsed ? 'w-[56px]' : 'w-[260px]'} h-screen bg-sidebar border-r border-sidebar-border flex flex-col shrink-0 transition-[width] duration-200`}
       style={{ transitionTimingFunction: 'var(--ease-swift)' }}
     >
-      <div className={`${collapsed ? 'px-2 justify-center' : 'px-4 justify-between'} py-5 border-b border-sidebar-border flex items-center`}>
+      <div className={`${collapsed ? 'px-2 justify-center' : 'px-4 justify-between'} h-16 border-b border-border flex items-center`}>
         {!collapsed && (
-          <div className="font-display text-sm tracking-tight text-sidebar-primary flex items-center gap-2">
+          <div className="font-display text-base tracking-tight text-sidebar-primary flex items-center gap-2">
             <img src="/favicon.svg" alt="" className="w-5 h-5 shrink-0" aria-hidden />
             Flox
           </div>

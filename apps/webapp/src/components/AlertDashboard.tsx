@@ -45,10 +45,7 @@ export default function AlertDashboard({ devices, onNavigateToDevice }: AlertDas
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      <PageHeader
-        title="Issues"
-        subtitle={`${filtered.length} active faults across ${new Set(filtered.map(a => a.device.id)).size} devices`}
-      />
+      <PageHeader title="Issues" />
       <div className="flex-1 p-6 overflow-y-auto">
 
       {/* Summary bar */}

@@ -41,6 +41,7 @@ export default function Layout() {
 
   return (
     <div className="flex h-screen overflow-hidden">
+      <div className="fixed top-0 left-0 right-0 h-0.5 z-50 bg-brand" />
       <AppSidebar
         activeView={activeView}
         buildingStats={buildingStats}
@@ -50,7 +51,6 @@ export default function Layout() {
       <div className="relative flex flex-1 overflow-hidden">
         <Outlet context={ctx} />
       </div>
-      <div className="fixed top-0 left-0 right-0 h-0.5 z-50 bg-brand" />
     </div>
   );
 }

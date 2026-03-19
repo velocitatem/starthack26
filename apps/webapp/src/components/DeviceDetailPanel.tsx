@@ -10,7 +10,9 @@ import {
   ChevronDown,
   Activity,
   RefreshCw,
+  ExternalLink,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { type Device, type NodeFaultHistoryEntry } from '@/types/facility';
 import { useResolveFault } from '@/hooks/useFacilityData';
 import { useNodeFaultHistory } from '@/hooks/useNodeFaultHistory';
@@ -124,7 +126,16 @@ export default function DeviceDetailPanel({ device, onClose }: DeviceDetailPanel
         >
           <div className="card-accent-top flex items-start justify-between border-b border-border px-5 py-4">
             <div>
-              <div className="font-display text-sm tracking-tight">{device.name}</div>
+              <div className="flex items-center gap-1.5">
+                <span className="font-display text-sm tracking-tight">{device.name}</span>
+                <Link
+                  to={`/issues/${device.id}`}
+                  className="text-muted-foreground transition-colors hover:text-foreground"
+                  title="View full device details"
+                >
+                  <ExternalLink size={12} />
+                </Link>
+              </div>
               <div className="mt-0.5 text-[11px] text-muted-foreground">{device.id} · {device.model}</div>
             </div>
             <button onClick={onClose} className="p-1 text-muted-foreground transition-colors hover:text-foreground">

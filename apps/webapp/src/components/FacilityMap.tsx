@@ -390,7 +390,6 @@ export default function FacilityMap({ ahuUnits, devices, nodePositions, onDevice
     <div className="flex-1 flex flex-col overflow-hidden">
       <PageHeader
         title="Facility Overview"
-        subtitle={`78 m² · ${devices.length} devices`}
         actions={<ModeToggle />}
       />
       <div className="flex-1 p-6 flex flex-col overflow-hidden">
@@ -400,7 +399,10 @@ export default function FacilityMap({ ahuUnits, devices, nodePositions, onDevice
         ref={containerRef}
         style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
       >
-        {/* Zoom controls */}
+        <div className="absolute top-3 left-3 z-10 text-[10px] text-muted-foreground font-display bg-card/90 px-2 py-1 border border-border rounded-md shadow-sm">
+          78 m² · {devices.length} devices
+        </div>
+
         <div className="absolute top-3 right-3 z-10 flex flex-col gap-1">
           <button onClick={zoomIn} className="w-8 h-8 flex items-center justify-center bg-card border border-border rounded-md text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors shadow-sm">
             <ZoomIn size={14} />

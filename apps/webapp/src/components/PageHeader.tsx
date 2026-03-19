@@ -1,18 +1,14 @@
 import type { ReactNode } from 'react';
 
 interface PageHeaderProps {
-  title: string;
-  subtitle?: string;
+  title: ReactNode;
   actions?: ReactNode;
 }
 
-export default function PageHeader({ title, subtitle, actions }: PageHeaderProps) {
+export default function PageHeader({ title, actions }: PageHeaderProps) {
   return (
-    <div className="px-6 py-3 flex items-center justify-between shrink-0">
-      <div>
-        <h1 className="font-display text-sm tracking-tight">{title}</h1>
-        {subtitle && <p className="text-[11px] text-muted-foreground mt-0.5">{subtitle}</p>}
-      </div>
+    <div className="px-6 h-16 flex items-center justify-between shrink-0 border-b border-border">
+      <h1 className="font-display text-base tracking-tight">{title}</h1>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>
   );
