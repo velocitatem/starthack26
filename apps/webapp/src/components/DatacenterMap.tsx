@@ -1,7 +1,7 @@
 import { useRef, useState, useCallback, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useGesture } from '@use-gesture/react';
-import { ZoomIn, ZoomOut, Maximize, Play, RotateCcw, Bug, LoaderCircle } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize, Play, Pause, LoaderCircle } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import { type AHUUnit, type Device, type SimulationFailureInput, type SimulationRunResponse } from '@/types/facility';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -24,8 +24,6 @@ const statusColor: Record<string, string> = {
   fault: 'var(--status-fault)',
   offline: 'var(--status-offline)',
 };
-
-const formatAnomalyConfidence = (value: number) => `${Math.round(value * 100)}%`;
 
 const DeviceIconSVG = ({ color }: { color: string }) => (
   <g transform="translate(-6,-6)">
@@ -847,14 +845,12 @@ export default function DatacenterMap({
   const [simulationResult, setSimulationResult] = useState<SimulationRunResponse | null>(null);
   const [isPlaybackRunning, setIsPlaybackRunning] = useState(false);
   const [simulationError, setSimulationError] = useState<string | null>(null);
-  const [showSimulationDebug, setShowSimulationDebug] = useState(true);
   const simulationMutation = useSimulationRun();
 
   const simulationTotalSteps = simulationResult?.timeline.timesSeconds.length ?? 0;
   const simulationMaxIndex = Math.max(0, simulationTotalSteps - 1);
   const simulationProgress = simulationStep === null || simulationMaxIndex === 0 ? 0 : clamp01(simulationStep / simulationMaxIndex);
   const simulationActive = simulationStep !== null;
-  const simulationPercent = Math.round(simulationProgress * 100);
 
   useEffect(() => {
     if (!isPlaybackRunning || !simulationResult || simulationTotalSteps <= 1) {
@@ -943,76 +939,6 @@ export default function DatacenterMap({
     };
   }, [simulationActive, simulationResult, simulationStep, simulationProgress, baselineRowTemperatures]);
 
-  const crossZoneRiseC = Math.max(
-    rowTemperatures.row_b - baselineRowTemperatures.row_b,
-    rowTemperatures.row_d - baselineRowTemperatures.row_d,
-  );
-  const localRiseC = rowTemperatures.row_f - baselineRowTemperatures.row_f;
-
-  const currentRecirculationByZone = useMemo(() => {
-    if (!simulationResult || simulationStep === null) {
-      return null;
-    }
-    const recirc = simulationResult.timeline.zoneRecirculation;
-    if (!recirc) {
-      return null;
-    }
-    return {
-      zone_ab: timelineAt(recirc.zone_ab, simulationStep, 0),
-      zone_cd: timelineAt(recirc.zone_cd, simulationStep, 0),
-      zone_ef: timelineAt(recirc.zone_ef, simulationStep, 0),
-    };
-  }, [simulationResult, simulationStep]);
-
-  const hottestRack = useMemo(() => {
-    if (!simulationResult || simulationStep === null || !simulationResult.timeline.rackCpuTemperatures) {
-      return null;
-    }
-    let hottestRackId: string | null = null;
-    let hottestTemp = -Infinity;
-    for (const [rackId, series] of Object.entries(simulationResult.timeline.rackCpuTemperatures)) {
-      const value = timelineAt(series, simulationStep, -Infinity);
-      if (value > hottestTemp) {
-        hottestTemp = value;
-        hottestRackId = rackId;
-      }
-    }
-    if (!hottestRackId) {
-      return null;
-    }
-    return {
-      rackId: hottestRackId,
-      tempC: hottestTemp,
-    };
-  }, [simulationResult, simulationStep]);
-
-  const serviceRiskPercent = simulationResult
-    ? Math.round((simulationResult.bayesian.summary.service_degradation_probability ?? 0) * 100)
-    : 0;
-  const serviceBaselinePercent = simulationResult
-    ? Math.round((simulationResult.bayesian.summary.baseline_service_degradation_probability ?? 0) * 100)
-    : 0;
-  const serviceDeltaPercent = simulationResult
-    ? Math.round((simulationResult.bayesian.summary.service_probability_delta ?? 0) * 100)
-    : 0;
-  const cpuRiskPercent = simulationResult
-    ? Math.round((simulationResult.bayesian.summary.cpu_throttling_probability ?? 0) * 100)
-    : 0;
-  const cpuBaselinePercent = simulationResult
-    ? Math.round((simulationResult.bayesian.summary.baseline_cpu_throttling_probability ?? 0) * 100)
-    : 0;
-  const cpuDeltaPercent = simulationResult
-    ? Math.round((simulationResult.bayesian.summary.cpu_probability_delta ?? 0) * 100)
-    : 0;
-  const bayesianDrivers = simulationResult?.bayesian.summary.key_drivers ?? [];
-  const bayesianExplainability = simulationResult?.bayesian.explainability ?? null;
-  const serviceExplain = bayesianExplainability?.serviceRisk;
-  const cpuExplain = bayesianExplainability?.cpuRisk;
-  const discoveryClaim = simulationResult?.discovery.discoveryClaim ?? null;
-  const counterintuitiveFinding = simulationResult?.discovery.counterintuitiveFinding ?? null;
-  const significanceScore = simulationResult?.discovery.significanceScore ?? null;
-  const discoveryEvidence = simulationResult?.discovery.evidence ?? [];
-
   const startSimulation = async () => {
     setSimulationError(null);
     setIsPlaybackRunning(false);
@@ -1031,11 +957,13 @@ export default function DatacenterMap({
     }
   };
 
-  const resetSimulation = () => {
-    setIsPlaybackRunning(false);
-    setSimulationStep(null);
-    setSimulationResult(null);
+  const restartSimulationPlayback = () => {
+    if (!simulationResult) {
+      return;
+    }
     setSimulationError(null);
+    setSimulationStep(0);
+    setIsPlaybackRunning(true);
   };
 
   const clampTransform = useCallback((x: number, y: number, scale: number) => {
@@ -1082,11 +1010,17 @@ export default function DatacenterMap({
   const runSimulationLabel = simulationMutation.isPending
     ? 'Running backend simulation'
     : isPlaybackRunning
-      ? `Simulation playing at ${simulationPercent}%`
+      ? 'Restart simulation'
       : simulationStep === null
         ? 'Run simulation'
         : 'Run simulation again';
-  const simulationDebugLabel = showSimulationDebug ? 'Hide simulation debug' : 'Show simulation debug';
+  const handleSimulationButtonClick = () => {
+    if (isPlaybackRunning && simulationResult) {
+      restartSimulationPlayback();
+      return;
+    }
+    void startSimulation();
+  };
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -1098,12 +1032,12 @@ export default function DatacenterMap({
               <TooltipTrigger asChild>
                 <Button
                   size="icon"
-                  onClick={startSimulation}
+                  onClick={handleSimulationButtonClick}
                   disabled={simulationMutation.isPending}
                   aria-label={runSimulationLabel}
                   title={runSimulationLabel}
                 >
-                  {simulationMutation.isPending ? <LoaderCircle className="animate-spin" /> : <Play size={16} />}
+                  {simulationMutation.isPending ? <LoaderCircle className="animate-spin" /> : isPlaybackRunning ? <Pause size={16} /> : <Play size={16} />}
                   <span className="sr-only">{runSimulationLabel}</span>
                 </Button>
               </TooltipTrigger>
@@ -1111,45 +1045,6 @@ export default function DatacenterMap({
                 {runSimulationLabel}
               </TooltipContent>
             </Tooltip>
-            {simulationStep !== null && (
-              <>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="icon"
-                      variant={showSimulationDebug ? 'secondary' : 'outline'}
-                      onClick={() => setShowSimulationDebug((current) => !current)}
-                      aria-label={simulationDebugLabel}
-                      aria-pressed={showSimulationDebug}
-                      title={simulationDebugLabel}
-                    >
-                      <Bug size={16} />
-                      <span className="sr-only">{simulationDebugLabel}</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="text-[12px] font-display">
-                    {simulationDebugLabel}
-                  </TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      onClick={resetSimulation}
-                      aria-label="Reset simulation"
-                      title="Reset simulation"
-                    >
-                      <RotateCcw size={16} />
-                      <span className="sr-only">Reset simulation</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="text-[12px] font-display">
-                    Reset simulation
-                  </TooltipContent>
-                </Tooltip>
-              </>
-            )}
           </>
         }
       />
@@ -1186,97 +1081,6 @@ export default function DatacenterMap({
           {simulationStep === null && (
             <div className="absolute top-6 left-6 z-10 text-[10px] text-muted-foreground font-display bg-card/90 px-2 py-1 border border-border rounded-md shadow-sm">
               Rows A-F · {devices.length} devices
-            </div>
-          )}
-
-          {simulationStep !== null && showSimulationDebug && (
-            <div className="absolute top-6 left-6 z-10 w-[350px] max-w-[calc(100%-120px)] bg-card/95 border border-border rounded-md px-3 py-2 shadow-sm">
-              <div className="flex items-center justify-between gap-3 text-[11px] font-display">
-                <span>Backend Multiphysics + Bayesian Simulation</span>
-                <span className="text-muted-foreground">{simulationPercent}%</span>
-              </div>
-              <div className="mt-1.5 h-1.5 bg-muted rounded-sm overflow-hidden">
-                <div
-                  className="h-full bg-[hsl(var(--status-fault))] transition-[width] duration-75"
-                  style={{ width: `${simulationPercent}%` }}
-                />
-              </div>
-              <div className="mt-2 text-[10px] text-muted-foreground leading-tight">
-                Thermal signal: local Row F hot aisle +{localRiseC.toFixed(1)}C and cross-zone hot aisle rise +{crossZoneRiseC.toFixed(1)}C.
-              </div>
-              {simulationResult && (
-                <>
-                  {discoveryClaim && (
-                    <div className="mt-1 text-[10px] leading-tight text-foreground/90">
-                      Discovery claim: {discoveryClaim}
-                    </div>
-                  )}
-                  {counterintuitiveFinding && (
-                    <div className="mt-1 text-[10px] leading-tight text-[hsl(var(--status-warning))]">
-                      Counterintuitive: {counterintuitiveFinding}
-                    </div>
-                  )}
-                  {typeof significanceScore === 'number' && (
-                    <div className="mt-1 text-[10px] text-muted-foreground leading-tight">
-                      Significance score: {significanceScore.toFixed(1)} / 100
-                      {typeof simulationResult.discovery.pValue === 'number' && (
-                        <span>{` · p=${simulationResult.discovery.pValue.toFixed(4)}`}</span>
-                      )}
-                      {typeof simulationResult.discovery.effectSize === 'number' && (
-                        <span>{` · effect=${simulationResult.discovery.effectSize.toFixed(2)}`}</span>
-                      )}
-                    </div>
-                  )}
-                  <div className="mt-1 text-[10px] text-muted-foreground leading-tight">
-                    Bayesian impact: service risk {serviceBaselinePercent}% to {serviceRiskPercent}% ({serviceDeltaPercent >= 0 ? '+' : ''}{serviceDeltaPercent}pp),
-                    CPU throttling risk {cpuBaselinePercent}% to {cpuRiskPercent}% ({cpuDeltaPercent >= 0 ? '+' : ''}{cpuDeltaPercent}pp).
-                  </div>
-                  {serviceExplain && (
-                    <div className="mt-1 text-[10px] text-muted-foreground leading-tight">
-                      Why service risk changed: {serviceExplain.interpretation}
-                    </div>
-                  )}
-                  {serviceExplain?.topContributors?.[0] && (
-                    <div className="mt-1 text-[10px] text-muted-foreground leading-tight">
-                      Top contributor: {serviceExplain.topContributors[0].sourceLabel} (
-                      {Math.round(serviceExplain.topContributors[0].baselineContribution * 100)}% to {Math.round(serviceExplain.topContributors[0].candidateContribution * 100)}% weighted influence).
-                    </div>
-                  )}
-                  {serviceExplain?.strongestPaths?.[0] && (
-                    <div className="mt-1 text-[10px] text-muted-foreground leading-tight">
-                      Strongest path: {serviceExplain.strongestPaths[0].path} (score {serviceExplain.strongestPaths[0].score.toFixed(2)}).
-                    </div>
-                  )}
-                  {cpuExplain?.strongestPaths?.[0] && (
-                    <div className="mt-1 text-[10px] text-muted-foreground leading-tight">
-                      CPU path support: {cpuExplain.strongestPaths[0].path} (score {cpuExplain.strongestPaths[0].score.toFixed(2)}).
-                    </div>
-                  )}
-                  <div className="mt-1 text-[10px] text-muted-foreground leading-tight">
-                    Most at-risk zone: {simulationResult.bayesian.summary.most_at_risk_zone.replace('_', ' ')}.
-                  </div>
-                  {currentRecirculationByZone && (
-                    <div className="mt-1 text-[10px] text-muted-foreground leading-tight">
-                      Recirculation now: AB {(currentRecirculationByZone.zone_ab * 100).toFixed(1)}%, CD {(currentRecirculationByZone.zone_cd * 100).toFixed(1)}%, EF {(currentRecirculationByZone.zone_ef * 100).toFixed(1)}%.
-                    </div>
-                  )}
-                  {hottestRack && (
-                    <div className="mt-1 text-[10px] text-muted-foreground leading-tight">
-                      Hottest rack now: {hottestRack.rackId} at {hottestRack.tempC.toFixed(1)}C.
-                    </div>
-                  )}
-                  {discoveryEvidence.length > 0 && (
-                    <div className="mt-1 text-[10px] text-muted-foreground leading-tight">
-                      Evidence: {counterintuitiveFinding ? (discoveryEvidence[1] ?? discoveryEvidence[0]) : discoveryEvidence[0]}
-                    </div>
-                  )}
-                  {bayesianDrivers.length > 0 && (
-                    <div className="mt-1 text-[10px] text-muted-foreground leading-tight">
-                      Key drivers: {bayesianDrivers.join(', ')}
-                    </div>
-                  )}
-                </>
-              )}
             </div>
           )}
 
