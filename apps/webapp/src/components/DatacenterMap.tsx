@@ -74,6 +74,28 @@ const ductDevicePositions: Record<string, { x: number; y: number }> = {
 const supplyPalette = '187 92% 54%';
 const exhaustPalette = '18 100% 62%';
 
+// Pure SVG isometric projection — no CSS 3D transforms, no perspective distortion.
+// The datacenter source space is ~1200 wide × 700 tall (x: 40–1160, y: 40–660).
+// projectIsoPoint maps that into the 1200×700 SVG viewBox as a rhombus.
+// Bounding analysis with s=0.70:
+//   NE corner screen: (1099, 432), SW corner screen: (44, 257)
+//   Top of tallest duct at z=114: y ≈ 69.  Bottom of floor at z=0: y ≈ 649.
+//   X span: 44–1099 (1055 px), Y span: 69–649 (580 px) — fits 1200×700 cleanly.
+const ISO_PROJECTION_SCALE = 0.70;
+const ISO_ORIGIN_X = 420;
+const ISO_ORIGIN_Y = 12;
+const ISO_COS = Math.cos(Math.PI / 6);
+const ISO_SIN = Math.sin(Math.PI / 6);
+const ISO_MATRIX_A = Number((ISO_COS * ISO_PROJECTION_SCALE).toFixed(6));
+const ISO_MATRIX_B = Number((ISO_SIN * ISO_PROJECTION_SCALE).toFixed(6));
+const ISO_MATRIX_C = Number((-ISO_COS * ISO_PROJECTION_SCALE).toFixed(6));
+const ISO_MATRIX_D = Number((ISO_SIN * ISO_PROJECTION_SCALE).toFixed(6));
+const ISOMETRIC_FLOOR_MATRIX =
+  `matrix(${ISO_MATRIX_A} ${ISO_MATRIX_B} ${ISO_MATRIX_C} ${ISO_MATRIX_D} ${ISO_ORIGIN_X} ${ISO_ORIGIN_Y})`;
+const DATACENTER_DECK_Z = 14;
+const MIN_MAP_SCALE = 0.55;
+const DEFAULT_MAP_SCALE = 1.0;
+
 const supplyBranchIds = ['BEL-VLV-003', 'BEL-VLV-005', 'BEL-ACT-007'];
 const exhaustBranchIds = ['BEL-DMP-002', 'BEL-ACT-004', 'BEL-DMP-006'];
 
@@ -751,122 +773,410 @@ const ThermalOverlay = ({
   </g>
 );
 
-const DatacenterBase = () => (
-  <g>
-    <defs>
-      <rect
-        id="datacenter-rack"
-        x="0"
-        y="0"
-        width="30"
-        height="23"
-        fill="hsl(var(--map-floor))"
-        stroke="hsl(var(--foreground) / 0.5)"
-        strokeWidth="1.5"
+type IsoPoint = { x: number; y: number };
+
+interface IsoPrismProps {
+  x: number;
+  y: number;
+  width: number;
+  depth: number;
+  height: number;
+  baseZ?: number;
+  topFill: string;
+  southFill: string;
+  eastFill: string;
+  stroke?: string;
+  strokeWidth?: number;
+}
+
+const projectIsoPoint = (x: number, y: number, z = 0): IsoPoint => ({
+  x: ISO_ORIGIN_X + (x - y) * ISO_COS * ISO_PROJECTION_SCALE,
+  y: ISO_ORIGIN_Y + (x + y) * ISO_SIN * ISO_PROJECTION_SCALE - z * ISO_PROJECTION_SCALE,
+});
+
+const toIsoPointList = (points: IsoPoint[]) => points.map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ');
+
+const IsoPrism = ({
+  x,
+  y,
+  width,
+  depth,
+  height,
+  baseZ = 0,
+  topFill,
+  southFill,
+  eastFill,
+  stroke = 'hsl(var(--foreground) / 0.45)',
+  strokeWidth = 1,
+}: IsoPrismProps) => {
+  const topZ = baseZ + height;
+  const topNW = projectIsoPoint(x, y, topZ);
+  const topNE = projectIsoPoint(x + width, y, topZ);
+  const topSE = projectIsoPoint(x + width, y + depth, topZ);
+  const topSW = projectIsoPoint(x, y + depth, topZ);
+
+  const baseNE = projectIsoPoint(x + width, y, baseZ);
+  const baseSE = projectIsoPoint(x + width, y + depth, baseZ);
+  const baseSW = projectIsoPoint(x, y + depth, baseZ);
+
+  return (
+    <g>
+      <polygon
+        points={toIsoPointList([topSW, topSE, baseSE, baseSW])}
+        fill={southFill}
+        stroke={stroke}
+        strokeWidth={strokeWidth}
+      />
+      <polygon
+        points={toIsoPointList([topNE, topSE, baseSE, baseNE])}
+        fill={eastFill}
+        stroke={stroke}
+        strokeWidth={strokeWidth}
+      />
+      <polygon
+        points={toIsoPointList([topNW, topNE, topSE, topSW])}
+        fill={topFill}
+        stroke={stroke}
+        strokeWidth={strokeWidth}
+      />
+    </g>
+  );
+};
+
+const DatacenterBase = () => {
+  const rackColumns = [150, 220, 300, 370, 450, 520, 600, 670, 750, 820, 900, 970];
+  const hotAisleSpines = [330, 630, 930];
+  const rowDecks = [
+    { x: 180, tone: 'hsl(var(--map-aisle) / 0.88)' },
+    { x: 330, tone: 'hsl(var(--map-struct) / 0.58)' },
+    { x: 480, tone: 'hsl(var(--map-aisle) / 0.88)' },
+    { x: 630, tone: 'hsl(var(--map-struct) / 0.58)' },
+    { x: 780, tone: 'hsl(var(--map-aisle) / 0.88)' },
+    { x: 930, tone: 'hsl(var(--map-struct) / 0.58)' },
+  ];
+
+  const intakeLabelPoint = projectIsoPoint(74, 606, DATACENTER_DECK_Z + 74);
+  const exhaustLabelPoint = projectIsoPoint(1088, 86, DATACENTER_DECK_Z + 98);
+
+  return (
+    <g>
+      <defs>
+        <linearGradient id="iso-map-backdrop" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="hsl(var(--background))" />
+          <stop offset="70%" stopColor="hsl(var(--background) / 0.94)" />
+          <stop offset="100%" stopColor="hsl(var(--map-aisle) / 0.18)" />
+        </linearGradient>
+        <linearGradient id="iso-floor-top" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="hsl(var(--map-floor) / 0.98)" />
+          <stop offset="100%" stopColor="hsl(var(--map-aisle) / 0.9)" />
+        </linearGradient>
+        <linearGradient id="iso-floor-south" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="hsl(var(--map-struct) / 0.55)" />
+          <stop offset="100%" stopColor="hsl(var(--map-struct) / 0.72)" />
+        </linearGradient>
+        <linearGradient id="iso-floor-east" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="hsl(var(--map-struct) / 0.48)" />
+          <stop offset="100%" stopColor="hsl(var(--map-struct) / 0.65)" />
+        </linearGradient>
+        <linearGradient id="iso-duct-top" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="hsl(var(--map-struct) / 0.78)" />
+          <stop offset="100%" stopColor="hsl(var(--map-struct) / 0.66)" />
+        </linearGradient>
+        <linearGradient id="iso-duct-south" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="hsl(var(--map-struct) / 0.6)" />
+          <stop offset="100%" stopColor="hsl(var(--map-struct) / 0.75)" />
+        </linearGradient>
+        <linearGradient id="iso-duct-east" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="hsl(var(--map-struct) / 0.54)" />
+          <stop offset="100%" stopColor="hsl(var(--map-struct) / 0.7)" />
+        </linearGradient>
+        <linearGradient id="iso-rack-top" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="hsl(var(--map-floor) / 1)" />
+          <stop offset="100%" stopColor="hsl(var(--map-floor) / 0.86)" />
+        </linearGradient>
+      </defs>
+
+      <rect width="1200" height="700" fill="url(#iso-map-backdrop)" />
+
+      <IsoPrism
+        x={40}
+        y={40}
+        width={1120}
+        depth={620}
+        height={DATACENTER_DECK_Z}
+        topFill="url(#iso-floor-top)"
+        southFill="url(#iso-floor-south)"
+        eastFill="url(#iso-floor-east)"
+        stroke="hsl(var(--foreground) / 0.42)"
+        strokeWidth={1.25}
+      />
+      <IsoPrism
+        x={56}
+        y={56}
+        width={1088}
+        depth={588}
+        height={5}
+        baseZ={DATACENTER_DECK_Z}
+        topFill="hsl(var(--map-floor) / 0.24)"
+        southFill="hsl(var(--map-struct) / 0.28)"
+        eastFill="hsl(var(--map-struct) / 0.34)"
+        stroke="hsl(var(--foreground) / 0.14)"
+        strokeWidth={0.8}
       />
 
-      <g id="datacenter-rack-col">
-        <use href="#datacenter-rack" x="0" y="0" />
-        <use href="#datacenter-rack" x="0" y="25" />
-        <use href="#datacenter-rack" x="0" y="50" />
-        <use href="#datacenter-rack" x="0" y="75" />
-        <use href="#datacenter-rack" x="0" y="100" />
-        <use href="#datacenter-rack" x="0" y="125" />
-        <use href="#datacenter-rack" x="0" y="150" />
-        <use href="#datacenter-rack" x="0" y="175" />
-        <use href="#datacenter-rack" x="0" y="200" />
-        <use href="#datacenter-rack" x="0" y="225" />
-      </g>
+      <IsoPrism
+        x={35}
+        y={480}
+        width={20}
+        depth={20}
+        height={10}
+        baseZ={DATACENTER_DECK_Z + 5}
+        topFill="hsl(var(--map-aisle) / 0.86)"
+        southFill="hsl(var(--map-struct) / 0.54)"
+        eastFill="hsl(var(--map-struct) / 0.58)"
+      />
+      <IsoPrism
+        x={1145}
+        y={480}
+        width={20}
+        depth={20}
+        height={10}
+        baseZ={DATACENTER_DECK_Z + 5}
+        topFill="hsl(var(--map-aisle) / 0.86)"
+        southFill="hsl(var(--map-struct) / 0.54)"
+        eastFill="hsl(var(--map-struct) / 0.58)"
+      />
+      <IsoPrism
+        x={400}
+        y={645}
+        width={20}
+        depth={20}
+        height={10}
+        baseZ={DATACENTER_DECK_Z + 5}
+        topFill="hsl(var(--map-aisle) / 0.86)"
+        southFill="hsl(var(--map-struct) / 0.54)"
+        eastFill="hsl(var(--map-struct) / 0.58)"
+      />
+      <IsoPrism
+        x={750}
+        y={645}
+        width={20}
+        depth={20}
+        height={10}
+        baseZ={DATACENTER_DECK_Z + 5}
+        topFill="hsl(var(--map-aisle) / 0.86)"
+        southFill="hsl(var(--map-struct) / 0.54)"
+        eastFill="hsl(var(--map-struct) / 0.58)"
+      />
 
-      <pattern id="datacenter-grid" width="40" height="40" patternUnits="userSpaceOnUse">
-        <path
-          d="M 40 0 L 0 0 0 40"
-          fill="none"
-          stroke="hsl(var(--foreground) / 0.07)"
-          strokeWidth="0.75"
+      {rowDecks.map((rowDeck) => (
+        <IsoPrism
+          key={`deck-${rowDeck.x}`}
+          x={rowDeck.x}
+          y={220}
+          width={40}
+          depth={250}
+          height={2}
+          baseZ={DATACENTER_DECK_Z + 4}
+          topFill={rowDeck.tone}
+          southFill="hsl(var(--map-struct) / 0.48)"
+          eastFill="hsl(var(--map-struct) / 0.52)"
+          stroke="hsl(var(--foreground) / 0.08)"
+          strokeWidth={0.6}
         />
-      </pattern>
+      ))}
 
-      <linearGradient id="datacenter-shell" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="hsl(var(--map-floor))" />
-        <stop offset="100%" stopColor="hsl(var(--map-aisle) / 0.85)" />
-      </linearGradient>
-    </defs>
+      {hotAisleSpines.map((x) => (
+        <IsoPrism
+          key={`spine-${x}`}
+          x={x - 5}
+          y={470}
+          width={50}
+          depth={20}
+          height={12}
+          baseZ={DATACENTER_DECK_Z + 6}
+          topFill="hsl(var(--map-struct) / 0.56)"
+          southFill="hsl(var(--map-struct) / 0.66)"
+          eastFill="hsl(var(--map-struct) / 0.72)"
+          stroke="hsl(var(--foreground) / 0.24)"
+          strokeWidth={0.8}
+        />
+      ))}
 
-    <rect width="1200" height="700" fill="url(#datacenter-grid)" />
-    <rect width="1200" height="700" fill="hsl(var(--background) / 0.45)" />
-    <rect x="40" y="40" width="1120" height="620" fill="url(#datacenter-shell)" stroke="hsl(var(--foreground) / 0.55)" strokeWidth="6" />
-    <rect x="50" y="50" width="1100" height="600" fill="none" stroke="hsl(var(--foreground) / 0.3)" strokeWidth="1.5" />
+      {rackColumns.flatMap((rackX) =>
+        Array.from({ length: 10 }, (_, index) => (
+          <IsoPrism
+            key={`rack-${rackX}-${index}`}
+            x={rackX}
+            y={220 + index * 25}
+            width={30}
+            depth={23}
+            height={34}
+            baseZ={DATACENTER_DECK_Z + 6}
+            topFill={index % 2 === 0 ? 'url(#iso-rack-top)' : 'hsl(var(--map-floor) / 0.9)'}
+            southFill="hsl(var(--map-struct) / 0.72)"
+            eastFill="hsl(var(--map-struct) / 0.8)"
+            stroke="hsl(var(--foreground) / 0.3)"
+            strokeWidth={0.75}
+          />
+        )),
+      )}
 
-    <rect x="35" y="480" width="20" height="20" fill="hsl(var(--map-aisle))" stroke="hsl(var(--foreground) / 0.55)" strokeWidth="1.5" />
-    <rect x="1145" y="480" width="20" height="20" fill="hsl(var(--map-aisle))" stroke="hsl(var(--foreground) / 0.55)" strokeWidth="1.5" />
-    <rect x="400" y="645" width="20" height="20" fill="hsl(var(--map-aisle))" stroke="hsl(var(--foreground) / 0.55)" strokeWidth="1.5" />
-    <rect x="750" y="645" width="20" height="20" fill="hsl(var(--map-aisle))" stroke="hsl(var(--foreground) / 0.55)" strokeWidth="1.5" />
+      <IsoPrism
+        x={300}
+        y={90}
+        width={850}
+        depth={35}
+        height={18}
+        baseZ={DATACENTER_DECK_Z + 82}
+        topFill="url(#iso-duct-top)"
+        southFill="url(#iso-duct-south)"
+        eastFill="url(#iso-duct-east)"
+        stroke="hsl(var(--foreground) / 0.44)"
+        strokeWidth={0.95}
+      />
+      {[335, 635, 935].map((x) => (
+        <IsoPrism
+          key={`upper-drop-${x}`}
+          x={x}
+          y={125}
+          width={30}
+          depth={55}
+          height={18}
+          baseZ={DATACENTER_DECK_Z + 82}
+          topFill="url(#iso-duct-top)"
+          southFill="url(#iso-duct-south)"
+          eastFill="url(#iso-duct-east)"
+          stroke="hsl(var(--foreground) / 0.44)"
+          strokeWidth={0.95}
+        />
+      ))}
+      {[325, 625, 925].map((x) => (
+        <IsoPrism
+          key={`upper-collar-${x}`}
+          x={x}
+          y={180}
+          width={50}
+          depth={15}
+          height={16}
+          baseZ={DATACENTER_DECK_Z + 82}
+          topFill="url(#iso-duct-top)"
+          southFill="url(#iso-duct-south)"
+          eastFill="url(#iso-duct-east)"
+          stroke="hsl(var(--foreground) / 0.44)"
+          strokeWidth={0.9}
+        />
+      ))}
+      <IsoPrism
+        x={1150}
+        y={80}
+        width={20}
+        depth={55}
+        height={18}
+        baseZ={DATACENTER_DECK_Z + 82}
+        topFill="url(#iso-duct-top)"
+        southFill="url(#iso-duct-south)"
+        eastFill="url(#iso-duct-east)"
+        stroke="hsl(var(--foreground) / 0.44)"
+        strokeWidth={0.95}
+      />
 
-    <rect x="180" y="220" width="40" height="250" fill="hsl(var(--map-aisle))" />
-    <use href="#datacenter-rack-col" x="150" y="220" />
-    <use href="#datacenter-rack-col" x="220" y="220" />
+      <IsoPrism
+        x={100}
+        y={550}
+        width={740}
+        depth={35}
+        height={16}
+        baseZ={DATACENTER_DECK_Z + 58}
+        topFill="url(#iso-duct-top)"
+        southFill="url(#iso-duct-south)"
+        eastFill="url(#iso-duct-east)"
+        stroke="hsl(var(--foreground) / 0.42)"
+        strokeWidth={0.9}
+      />
+      <IsoPrism
+        x={20}
+        y={550}
+        width={80}
+        depth={35}
+        height={16}
+        baseZ={DATACENTER_DECK_Z + 58}
+        topFill="url(#iso-duct-top)"
+        southFill="url(#iso-duct-south)"
+        eastFill="url(#iso-duct-east)"
+        stroke="hsl(var(--foreground) / 0.42)"
+        strokeWidth={0.9}
+      />
+      {[185, 485, 785].map((x) => (
+        <IsoPrism
+          key={`lower-rise-${x}`}
+          x={x}
+          y={490}
+          width={30}
+          depth={60}
+          height={16}
+          baseZ={DATACENTER_DECK_Z + 58}
+          topFill="url(#iso-duct-top)"
+          southFill="url(#iso-duct-south)"
+          eastFill="url(#iso-duct-east)"
+          stroke="hsl(var(--foreground) / 0.42)"
+          strokeWidth={0.9}
+        />
+      ))}
+      <IsoPrism
+        x={10}
+        y={540}
+        width={10}
+        depth={55}
+        height={16}
+        baseZ={DATACENTER_DECK_Z + 58}
+        topFill="url(#iso-duct-top)"
+        southFill="url(#iso-duct-south)"
+        eastFill="url(#iso-duct-east)"
+        stroke="hsl(var(--foreground) / 0.42)"
+        strokeWidth={0.9}
+      />
 
-    <rect x="330" y="220" width="40" height="250" fill="hsl(var(--map-struct) / 0.6)" />
-    <rect x="325" y="470" width="50" height="20" fill="hsl(var(--map-struct) / 0.6)" stroke="hsl(var(--foreground) / 0.45)" strokeWidth="1.5" />
-    <use href="#datacenter-rack-col" x="300" y="220" />
-    <use href="#datacenter-rack-col" x="370" y="220" />
+      {rowOverlays.map((row) => {
+        const center = projectIsoPoint(row.x + row.width / 2, row.y + row.height * 0.5, DATACENTER_DECK_Z + 46);
+        return (
+          <text
+            key={`row-label-${row.id}`}
+            x={center.x}
+            y={center.y}
+            textAnchor="middle"
+            fontSize="10"
+            fontFamily="var(--font-display)"
+            fill="hsl(var(--foreground) / 0.66)"
+          >
+            {row.label}
+          </text>
+        );
+      })}
 
-    <rect x="480" y="220" width="40" height="250" fill="hsl(var(--map-aisle))" />
-    <use href="#datacenter-rack-col" x="450" y="220" />
-    <use href="#datacenter-rack-col" x="520" y="220" />
-
-    <rect x="630" y="220" width="40" height="250" fill="hsl(var(--map-struct) / 0.6)" />
-    <rect x="625" y="470" width="50" height="20" fill="hsl(var(--map-struct) / 0.6)" stroke="hsl(var(--foreground) / 0.45)" strokeWidth="1.5" />
-    <use href="#datacenter-rack-col" x="600" y="220" />
-    <use href="#datacenter-rack-col" x="670" y="220" />
-
-    <rect x="780" y="220" width="40" height="250" fill="hsl(var(--map-aisle))" />
-    <use href="#datacenter-rack-col" x="750" y="220" />
-    <use href="#datacenter-rack-col" x="820" y="220" />
-
-    <rect x="930" y="220" width="40" height="250" fill="hsl(var(--map-struct) / 0.6)" />
-    <rect x="925" y="470" width="50" height="20" fill="hsl(var(--map-struct) / 0.6)" stroke="hsl(var(--foreground) / 0.45)" strokeWidth="1.5" />
-    <use href="#datacenter-rack-col" x="900" y="220" />
-    <use href="#datacenter-rack-col" x="970" y="220" />
-
-    <path
-      d="M 300 90 L 1150 90 L 1150 125 L 965 125 L 965 180 L 935 180 L 935 125 L 665 125 L 665 180 L 635 180 L 635 125 L 365 125 L 365 180 L 335 180 L 335 125 L 300 125 Z"
-      fill="hsl(var(--map-struct) / 0.5)"
-      stroke="hsl(var(--foreground) / 0.6)"
-      strokeWidth="1.5"
-    />
-    <polygon points="335,180 365,180 375,195 325,195" fill="hsl(var(--map-struct) / 0.5)" stroke="hsl(var(--foreground) / 0.6)" strokeWidth="1.5" />
-    <polygon points="635,180 665,180 675,195 625,195" fill="hsl(var(--map-struct) / 0.5)" stroke="hsl(var(--foreground) / 0.6)" strokeWidth="1.5" />
-    <polygon points="935,180 965,180 975,195 925,195" fill="hsl(var(--map-struct) / 0.5)" stroke="hsl(var(--foreground) / 0.6)" strokeWidth="1.5" />
-    <polygon points="1150,90 1150,125 1170,135 1170,80" fill="hsl(var(--map-struct) / 0.5)" stroke="hsl(var(--foreground) / 0.6)" strokeWidth="1.5" />
-
-    <rect x="335" y="145" width="30" height="20" fill="none" stroke="hsl(var(--foreground) / 0.7)" strokeWidth="1.5" />
-    <rect x="635" y="145" width="30" height="20" fill="none" stroke="hsl(var(--foreground) / 0.7)" strokeWidth="1.5" />
-    <rect x="935" y="145" width="30" height="20" fill="none" stroke="hsl(var(--foreground) / 0.7)" strokeWidth="1.5" />
-    <rect x="1080" y="90" width="20" height="35" fill="none" stroke="hsl(var(--foreground) / 0.7)" strokeWidth="1.5" />
-
-    <path
-      d="M 100 550 L 185 550 L 185 490 L 215 490 L 215 550 L 485 550 L 485 490 L 515 490 L 515 550 L 785 550 L 785 490 L 815 490 L 815 550 L 840 550 L 840 585 L 20 585 L 20 550 Z"
-      fill="hsl(var(--map-struct) / 0.5)"
-      stroke="hsl(var(--foreground) / 0.6)"
-      strokeWidth="1.5"
-    />
-    <polygon points="20,550 20,585 10,595 10,540" fill="hsl(var(--map-struct) / 0.5)" stroke="hsl(var(--foreground) / 0.6)" strokeWidth="1.5" />
-
-    <rect x="185" y="510" width="30" height="20" fill="none" stroke="hsl(var(--foreground) / 0.7)" strokeWidth="1.5" />
-    <rect x="485" y="510" width="30" height="20" fill="none" stroke="hsl(var(--foreground) / 0.7)" strokeWidth="1.5" />
-    <rect x="785" y="510" width="30" height="20" fill="none" stroke="hsl(var(--foreground) / 0.7)" strokeWidth="1.5" />
-    <rect x="60" y="550" width="20" height="35" fill="none" stroke="hsl(var(--foreground) / 0.7)" strokeWidth="1.5" />
-
-    <text x="78" y="615" fill={`hsl(${supplyPalette})`} fontSize="12" fontFamily="var(--font-display)">
-      INTAKE
-    </text>
-    <text x="1028" y="78" fill={`hsl(${exhaustPalette})`} fontSize="12" fontFamily="var(--font-display)">
-      EXHAUST
-    </text>
-  </g>
-);
+      <text
+        x={intakeLabelPoint.x}
+        y={intakeLabelPoint.y}
+        fill={`hsl(${supplyPalette})`}
+        fontSize="12"
+        fontFamily="var(--font-display)"
+        letterSpacing="0.08em"
+      >
+        INTAKE
+      </text>
+      <text
+        x={exhaustLabelPoint.x}
+        y={exhaustLabelPoint.y}
+        fill={`hsl(${exhaustPalette})`}
+        fontSize="12"
+        fontFamily="var(--font-display)"
+        letterSpacing="0.08em"
+      >
+        EXHAUST
+      </text>
+    </g>
+  );
+};
 
 export default function DatacenterMap({
   ahuUnits: _ahuUnits,
@@ -876,7 +1186,7 @@ export default function DatacenterMap({
   selectedDeviceId,
 }: DatacenterMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
+  const [transform, setTransform] = useState({ x: 0, y: 0, scale: DEFAULT_MAP_SCALE });
   const [isDragging, setIsDragging] = useState(false);
   const [simulationStep, setSimulationStep] = useState<number | null>(null);
   const [simulationResult, setSimulationResult] = useState<SimulationRunResponse | null>(null);
@@ -1074,7 +1384,7 @@ export default function DatacenterMap({
   };
 
   const clampTransform = useCallback((x: number, y: number, scale: number) => {
-    const s = Math.min(Math.max(scale, 0.45), 3.2);
+    const s = Math.min(Math.max(scale, MIN_MAP_SCALE), 3.2);
     const maxPanX = 360 * s;
     const maxPanY = 220 * s;
 
@@ -1106,7 +1416,7 @@ export default function DatacenterMap({
     {
       target: containerRef,
       drag: { filterTaps: true },
-      pinch: { scaleBounds: { min: 0.45, max: 3.2 } },
+      pinch: { scaleBounds: { min: MIN_MAP_SCALE, max: 3.2 } },
       wheel: { eventOptions: { passive: false } },
       eventOptions: { passive: false },
     },
@@ -1114,7 +1424,7 @@ export default function DatacenterMap({
 
   const zoomIn = () => setTransform((current) => clampTransform(current.x, current.y, current.scale * 1.25));
   const zoomOut = () => setTransform((current) => clampTransform(current.x, current.y, current.scale / 1.25));
-  const resetView = () => setTransform({ x: 0, y: 0, scale: 1 });
+  const resetView = () => setTransform({ x: 0, y: 0, scale: DEFAULT_MAP_SCALE });
   const runSimulationLabel = simulationMutation.isPending
     ? 'Running backend simulation'
     : isPlaybackRunning
@@ -1363,26 +1673,28 @@ export default function DatacenterMap({
             }}
           >
             <DatacenterBase />
-            {simulationStep !== null && (
-              <ThermalOverlay
+            <g transform={ISOMETRIC_FLOOR_MATRIX}>
+              {simulationStep !== null && (
+                <ThermalOverlay
+                  rowTemperatures={rowTemperatures}
+                  baselineTemperatures={baselineRowTemperatures}
+                />
+              )}
+              <DuctAirflow devices={displayDevices} nodePositions={displayNodePositions} />
+              <ThermodynamicAirflow
+                devices={displayDevices}
+                nodePositions={displayNodePositions}
                 rowTemperatures={rowTemperatures}
-                baselineTemperatures={baselineRowTemperatures}
               />
-            )}
-            <DuctAirflow devices={displayDevices} nodePositions={displayNodePositions} />
-            <ThermodynamicAirflow
-              devices={displayDevices}
-              nodePositions={displayNodePositions}
-              rowTemperatures={rowTemperatures}
-            />
-            {displayDevices.map((device) => (
-              <DeviceNode
-                key={device.id}
-                device={device}
-                selected={device.id === selectedDeviceId}
-                onClick={() => onDeviceSelect(device)}
-              />
-            ))}
+              {displayDevices.map((device) => (
+                <DeviceNode
+                  key={device.id}
+                  device={device}
+                  selected={device.id === selectedDeviceId}
+                  onClick={() => onDeviceSelect(device)}
+                />
+              ))}
+            </g>
           </svg>
         </motion.div>
       </div>
