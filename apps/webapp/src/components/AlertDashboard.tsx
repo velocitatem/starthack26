@@ -53,7 +53,7 @@ export default function AlertDashboard({ devices, onNavigateToDevice }: AlertDas
           ].map(s => (
           <div
             key={s.label}
-            className={`border bg-card p-4 cursor-pointer ${severityFilter === s.label.toLowerCase() ? 'border-foreground' : s.color}`}
+            className={`border bg-card p-4 cursor-pointer shadow-sm hover:shadow-md transition-shadow ${severityFilter === s.label.toLowerCase() ? 'card-accent-top border-foreground' : s.color}`}
             onClick={() => setSeverityFilter(severityFilter === s.label.toLowerCase() ? null : s.label === 'Total Energy Waste' ? null : s.label.toLowerCase())}
           >
             <div className="label-caps">{s.label}</div>
@@ -64,7 +64,7 @@ export default function AlertDashboard({ devices, onNavigateToDevice }: AlertDas
 
       {/* Alert list */}
       <div className="border border-border bg-card">
-        <div className="data-row border-b border-border">
+        <div className="data-row border-b border-border data-row-header">
           <span className="label-caps flex-1">Fault</span>
           <span className="label-caps w-28">Device</span>
           <span className="label-caps w-28">Zone</span>

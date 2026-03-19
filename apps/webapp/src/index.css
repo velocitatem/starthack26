@@ -8,7 +8,7 @@
   :root {
     color-scheme: light;
 
-    --background: 210 29% 97%;
+    --background: 0 0% 100%;
     --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
@@ -18,19 +18,19 @@
     --popover-foreground: 222 47% 11%;
 
     --primary: 222 47% 11%;
-    --primary-foreground: 210 40% 98%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 30% 93%;
+    --secondary: 200 5% 90%;
     --secondary-foreground: 222 47% 11%;
 
-    --muted: 210 25% 91%;
-    --muted-foreground: 215 16% 38%;
+    --muted: 200 5% 91%;
+    --muted-foreground: 200 5% 38%;
 
-    --accent: 210 25% 91%;
+    --accent: 200 5% 91%;
     --accent-foreground: 222 47% 11%;
 
-    --brand: 150 100% 36%;
-    --brand-foreground: 210 40% 98%;
+    --brand: 24 100% 51%;
+    --brand-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
@@ -38,25 +38,25 @@
     --warning: 38 92% 50%;
     --warning-foreground: 38 92% 10%;
 
-    --border: 214 25% 85%;
-    --input: 214 25% 85%;
-    --ring: 150 100% 36%;
+    --border: 200 5% 85%;
+    --input: 200 5% 85%;
+    --ring: 24 100% 51%;
 
     --radius: 2px;
 
-    --sidebar-background: 210 28% 94%;
-    --sidebar-foreground: 222 20% 28%;
+    --sidebar-background: 200 10% 93%;
+    --sidebar-foreground: 220 15% 35%;
     --sidebar-primary: 222 47% 11%;
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 210 24% 88%;
+    --sidebar-primary-foreground: 200 10% 93%;
+    --sidebar-accent: 200 10% 86%;
     --sidebar-accent-foreground: 222 47% 11%;
-    --sidebar-border: 214 25% 82%;
-    --sidebar-ring: 150 100% 36%;
+    --sidebar-border: 200 8% 82%;
+    --sidebar-ring: 24 100% 51%;
 
     --status-healthy: 150 100% 36%;
     --status-warning: 38 92% 50%;
     --status-fault: 0 72% 51%;
-    --status-offline: 215 12% 58%;
+    --status-offline: 200 5% 58%;
 
     --font-display: 'Geist Mono', ui-monospace, monospace;
     --font-body: 'Inter', system-ui, sans-serif;
@@ -67,55 +67,55 @@
   .dark {
     color-scheme: dark;
 
-    --background: 220 15% 3%;
-    --foreground: 220 10% 98%;
+    --background: 225 12% 5%;
+    --foreground: 30 5% 95%;
 
-    --card: 220 15% 6%;
-    --card-foreground: 220 10% 98%;
+    --card: 225 12% 8%;
+    --card-foreground: 30 5% 95%;
 
-    --popover: 220 15% 8%;
-    --popover-foreground: 220 10% 98%;
+    --popover: 225 10% 11%;
+    --popover-foreground: 30 5% 95%;
 
-    --primary: 220 10% 98%;
-    --primary-foreground: 220 15% 3%;
+    --primary: 30 5% 95%;
+    --primary-foreground: 225 12% 5%;
 
-    --secondary: 220 15% 10%;
-    --secondary-foreground: 220 10% 85%;
+    --secondary: 225 12% 12%;
+    --secondary-foreground: 30 5% 80%;
 
-    --muted: 220 15% 12%;
-    --muted-foreground: 220 10% 60%;
+    --muted: 225 10% 14%;
+    --muted-foreground: 220 8% 55%;
 
-    --accent: 220 15% 14%;
-    --accent-foreground: 220 10% 85%;
+    --accent: 225 10% 16%;
+    --accent-foreground: 30 5% 85%;
 
-    --brand: 150 100% 50%;
-    --brand-foreground: 220 15% 3%;
+    --brand: 24 100% 55%;
+    --brand-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
+    --warning: 38 92% 55%;
     --warning-foreground: 38 92% 10%;
 
-    --border: 220 15% 12%;
-    --input: 220 15% 12%;
-    --ring: 150 100% 50%;
+    --border: 225 10% 14%;
+    --input: 225 10% 14%;
+    --ring: 24 100% 55%;
 
     --radius: 2px;
 
-    --sidebar-background: 220 15% 4%;
-    --sidebar-foreground: 220 10% 70%;
-    --sidebar-primary: 220 10% 98%;
-    --sidebar-primary-foreground: 220 15% 3%;
-    --sidebar-accent: 220 15% 8%;
-    --sidebar-accent-foreground: 220 10% 98%;
-    --sidebar-border: 220 15% 10%;
-    --sidebar-ring: 150 100% 50%;
+    --sidebar-background: 225 15% 4%;
+    --sidebar-foreground: 220 8% 65%;
+    --sidebar-primary: 30 5% 95%;
+    --sidebar-primary-foreground: 225 15% 4%;
+    --sidebar-accent: 225 12% 9%;
+    --sidebar-accent-foreground: 30 5% 95%;
+    --sidebar-border: 225 12% 9%;
+    --sidebar-ring: 24 100% 55%;
 
-    --status-healthy: 150 100% 50%;
-    --status-warning: 38 92% 50%;
-    --status-fault: 0 72% 51%;
-    --status-offline: 220 10% 30%;
+    --status-healthy: 150 85% 45%;
+    --status-warning: 38 92% 55%;
+    --status-fault: 0 72% 55%;
+    --status-offline: 220 5% 35%;
 
     --font-display: 'Geist Mono', ui-monospace, monospace;
     --font-body: 'Inter', system-ui, sans-serif;

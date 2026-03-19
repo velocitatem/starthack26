@@ -22,6 +22,8 @@ const severityStyles: Record<string, string> = {
   low: 'border-muted bg-muted text-muted-foreground',
 };
 
+const formatAnomalyConfidence = (value: number) => `${Math.round(value * 100)}%`;
+
 export default function DeviceDetailPanel({ device, onClose }: DeviceDetailPanelProps) {
   return (
     <AnimatePresence>
@@ -34,7 +36,7 @@ export default function DeviceDetailPanel({ device, onClose }: DeviceDetailPanel
           className="absolute right-0 top-0 w-[360px] h-full z-30 border-l border-border bg-card overflow-y-auto shadow-xl"
         >
           {/* Header */}
-          <div className="px-5 py-4 border-b border-border flex items-start justify-between">
+          <div className="px-5 py-4 border-b border-border flex items-start justify-between card-accent-top">
             <div>
               <div className="font-display text-sm tracking-tight">{device.name}</div>
               <div className="text-[11px] text-muted-foreground mt-0.5">{device.id} · {device.model}</div>
@@ -51,9 +53,9 @@ export default function DeviceDetailPanel({ device, onClose }: DeviceDetailPanel
               <span className={`text-[13px] font-medium capitalize ${statusStyles[device.status]}`}>{device.status}</span>
             </div>
             <div className="text-right">
-              <div className="label-caps">Anomaly Score</div>
+              <div className="label-caps">Confidence Anomaly</div>
               <div className={`font-display text-lg ${device.anomalyScore > 0.7 ? 'text-status-fault' : device.anomalyScore > 0.4 ? 'text-status-warning' : 'text-status-healthy'}`}>
-                {device.anomalyScore.toFixed(2)}
+                {formatAnomalyConfidence(device.anomalyScore)}
               </div>
             </div>
           </div>
@@ -102,7 +104,7 @@ export default function DeviceDetailPanel({ device, onClose }: DeviceDetailPanel
               </div>
               <div className="space-y-3">
                 {device.faults.map(fault => (
-                  <div key={fault.id} className={`border p-3 ${severityStyles[fault.severity]}`}>
+                  <div key={fault.id} className={`border p-3 fault-card-accent ${severityStyles[fault.severity]}`}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-display text-[12px] font-semibold">{fault.type}</span>
                       <span className="text-[10px] uppercase tracking-wider font-medium">{fault.severity}</span>
