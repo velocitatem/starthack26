@@ -153,6 +153,14 @@ export interface FacilityStatusResponse extends FacilityNodesResponse {
   meta: FacilityMeta;
 }
 
+export interface FacilityContext {
+  ahuUnits: AHUUnit[];
+  buildingStats: BuildingStats;
+  devices: Device[];
+  historyByNodeId: Record<string, Record<string, TelemetryPoint[]>>;
+  nodePositions: Record<string, number>;
+}
+
 export interface AgentChatMessage {
   role: 'user' | 'assistant';
   content: string;

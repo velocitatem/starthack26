@@ -1,18 +1,15 @@
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { Bot, Check, ChevronDown, FileText, Gauge, Loader2, Move, Plus, Send, ShieldAlert, Thermometer, Trash2, X, Zap } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Bot, Check, FileText, Loader2, Plus, Send, ShieldAlert, Trash2, X, Zap } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
-import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { type AgentChatMessage, type AgentPendingAction, type AgentToolEvent, type Device, type TelemetryPoint } from '@/types/facility';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { type AgentChatMessage, type AgentPendingAction, type AgentToolEvent, type Device } from '@/types/facility';
 import { useAgentChat } from '@/hooks/useAgentChat';
 import { useDeleteDocument, useDocumentsList, useUploadDocument } from '@/hooks/useBuildingDocuments';
-import { useResolveFault } from '@/hooks/useFacilityData';
 
 interface AgentPanelProps {
   devices: Device[];
-  historyByNodeId?: Record<string, Record<string, TelemetryPoint[]>>;
 }
 
 interface ConversationMessage {
@@ -52,24 +49,6 @@ const nowId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 const NODE_ID_PATTERN = /\b[A-Z]{3}-[A-Z]{3}-\d{3}\b/g;
 const FAULT_ID_PATTERN = /\bfault-[a-z0-9-]+\b/gi;
 
-const titleCase = (value: string) => value
-  .split('_')
-  .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-  .join(' ');
-
-const formatTimestamp = (value: string) => {
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return value;
-  }
-  return parsed.toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-};
-
 const MessageMarkdown = ({ content }: { content: string }) => (
   <ReactMarkdown
     remarkPlugins={[remarkGfm]}
@@ -96,177 +75,31 @@ const MessageMarkdown = ({ content }: { content: string }) => (
 const extractMentionContext = (value: string, caretPosition: number): MentionContext | null => {
   const beforeCaret = value.slice(0, caretPosition);
   const mentionStart = beforeCaret.lastIndexOf('@');
-  if (mentionStart < 0) {
-    return null;
-  }
+  if (mentionStart < 0) return null;
 
   const previousChar = mentionStart > 0 ? beforeCaret[mentionStart - 1] : ' ';
-  if (previousChar.trim()) {
-    return null;
-  }
+  if (previousChar.trim()) return null;
 
   const query = beforeCaret.slice(mentionStart + 1);
-  if (/\s/.test(query)) {
-    return null;
-  }
+  if (/\s/.test(query)) return null;
 
-  return {
-    start: mentionStart,
-    end: caretPosition,
-    query,
-  };
+  return { start: mentionStart, end: caretPosition, query };
 };
-
-/* ------------------------------------------------------------------ */
-/*  Telemetry Tab                                                      */
-/* ------------------------------------------------------------------ */
-
-const CHANNEL_COLORS: Record<string, string> = {
-  torque: 'hsl(var(--brand))',
-  position: 'hsl(var(--status-warning))',
-  temperature: 'hsl(var(--status-healthy))',
-};
-
-const CHANNEL_ICONS: Record<string, typeof Thermometer> = {
-  torque: Gauge,
-  position: Move,
-  temperature: Thermometer,
-};
-
-const formatAxisTime = (time: string) => {
-  const d = new Date(time);
-  return Number.isNaN(d.getTime()) ? time : d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-};
-
-function TelemetryChart({ channel }: { channel: { key: string; label: string; data: TelemetryPoint[]; color: string } }) {
-  const chartConfig: ChartConfig = { [channel.key]: { label: channel.label, color: channel.color } };
-  const chartData = channel.data.map((p) => ({ time: p.time, [channel.key]: p.value }));
-  const values = channel.data.map((p) => p.value);
-  const [min, max] = values.length ? [Math.min(...values), Math.max(...values)] : [0, 1];
-  const pad = (max - min) * 0.1 || 1;
-
-  return (
-    <ChartContainer config={chartConfig} className="!aspect-auto h-[250px] w-full">
-      <AreaChart data={chartData} margin={{ top: 4, right: 8, bottom: 0, left: -12 }}>
-        <defs>
-          <linearGradient id={`fill-${channel.key}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={channel.color} stopOpacity={0.25} />
-            <stop offset="95%" stopColor={channel.color} stopOpacity={0.02} />
-          </linearGradient>
-        </defs>
-        <CartesianGrid vertical={false} strokeDasharray="3 3" />
-        <XAxis dataKey="time" tickFormatter={formatAxisTime} tick={{ fontSize: 10 }} tickLine={false} axisLine={false} minTickGap={40} />
-        <YAxis domain={[min - pad, max + pad]} tick={{ fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={(v: number) => v.toFixed(1)} />
-        <ChartTooltip
-          content={<ChartTooltipContent labelFormatter={(v) => formatAxisTime(v as string)} indicator="line" />}
-        />
-        <Area
-          type="monotone"
-          dataKey={channel.key}
-          stroke={channel.color}
-          strokeWidth={1.5}
-          fill={`url(#fill-${channel.key})`}
-          dot={false}
-          activeDot={{ r: 3, strokeWidth: 1 }}
-        />
-      </AreaChart>
-    </ChartContainer>
-  );
-}
-
-function TelemetryTabContent({
-  devices,
-  historyByNodeId,
-  selectedNodeId,
-}: {
-  devices: Device[];
-  historyByNodeId: Record<string, Record<string, TelemetryPoint[]>>;
-  selectedNodeId: string | null;
-}) {
-  const selectedDevice = devices.find((d) => d.id === selectedNodeId);
-  const nodeHistory = selectedNodeId ? historyByNodeId[selectedNodeId] : undefined;
-
-  const telemetryChannels = useMemo(() => {
-    if (nodeHistory) {
-      return Object.entries(nodeHistory).map(([key, data]) => ({
-        key,
-        label: titleCase(key),
-        data,
-        color: CHANNEL_COLORS[key] ?? 'hsl(var(--brand))',
-      }));
-    }
-    if (!selectedDevice) return [];
-    return (['torque', 'position', 'temperature'] as const)
-      .filter((k) => selectedDevice[k].length > 0)
-      .map((k) => ({
-        key: k,
-        label: titleCase(k),
-        data: selectedDevice[k],
-        color: CHANNEL_COLORS[k],
-      }));
-  }, [nodeHistory, selectedDevice]);
-
-  const latestValue = (data: TelemetryPoint[]) => data.length ? data[data.length - 1].value.toFixed(1) : '-';
-
-  return (
-    <div className="space-y-4">
-      {selectedDevice && (
-        <div className="border border-border bg-card p-3">
-          <div className="flex items-center gap-3">
-            <div className="text-[13px] font-medium text-foreground">{selectedDevice.name}</div>
-            <span className={`px-1.5 py-0.5 text-[10px] uppercase tracking-wider font-medium ${
-              selectedDevice.status === 'fault' ? 'bg-status-fault/15 text-status-fault'
-                : selectedDevice.status === 'warning' ? 'bg-status-warning/15 text-status-warning'
-                : 'bg-status-healthy/15 text-status-healthy'
-            }`}>
-              {selectedDevice.status}
-            </span>
-          </div>
-          <div className="text-[11px] text-muted-foreground mt-0.5">
-            {selectedDevice.type} - {selectedDevice.zone} - Anomaly score: {(selectedDevice.anomalyScore * 100).toFixed(0)}%
-          </div>
-        </div>
-      )}
-
-      {telemetryChannels.length === 0 ? (
-        <div className="text-[12px] text-muted-foreground">No telemetry data available for this node.</div>
-      ) : (
-        <div className="grid grid-cols-1 gap-3">
-          {telemetryChannels.map((channel) => (
-            <div key={channel.key} className="border border-border bg-card p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  {(() => { const Icon = CHANNEL_ICONS[channel.key] ?? Gauge; return <Icon size={12} className="text-muted-foreground" />; })()}
-                  <span className="label-caps">{channel.label}</span>
-                </div>
-                <span className="font-display text-sm text-foreground">{latestValue(channel.data)}</span>
-              </div>
-              <TelemetryChart channel={channel} />
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 /* ------------------------------------------------------------------ */
 /*  Main AgentPanel                                                    */
 /* ------------------------------------------------------------------ */
 
-type PlusDropdownMode = null | 'menu' | 'nodes';
-
-export default function AgentPanel({ devices, historyByNodeId = {} }: AgentPanelProps) {
+export default function AgentPanel({ devices }: AgentPanelProps) {
+  const navigate = useNavigate();
   const agentChat = useAgentChat();
   const inputRef = useRef<HTMLInputElement>(null);
   const documentInputRef = useRef<HTMLInputElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
-  const plusDropdownRef = useRef<HTMLDivElement>(null);
   const documentsQuery = useDocumentsList();
   const uploadDocumentMutation = useUploadDocument();
   const deleteDocumentMutation = useDeleteDocument();
 
-  const [activeTab, setActiveTab] = useState('chat');
   const [messages, setMessages] = useState<ConversationMessage[]>([
     {
       id: nowId(),
@@ -278,19 +111,13 @@ export default function AgentPanel({ devices, historyByNodeId = {} }: AgentPanel
   const [input, setInput] = useState('');
   const [caretPosition, setCaretPosition] = useState(0);
   const [mentionCursor, setMentionCursor] = useState(0);
-  const [historyNodeId, setHistoryNodeId] = useState<string | null>(null);
-  const [plusDropdown, setPlusDropdown] = useState<PlusDropdownMode>(null);
+  const [showNodePicker, setShowNodePicker] = useState(false);
   const [pendingAction, setPendingAction] = useState<AgentPendingAction | null>(null);
   const [latestToolEvents, setLatestToolEvents] = useState<AgentToolEvent[]>([]);
 
   const topFault = useMemo(() => {
     const faultEntries = devices
-      .flatMap((device) =>
-        device.faults.map((fault) => ({
-          device,
-          fault,
-        })),
-      )
+      .flatMap((device) => device.faults.map((fault) => ({ device, fault })))
       .sort((a, b) => severityWeight[a.fault.severity] - severityWeight[b.fault.severity]);
     return faultEntries[0] ?? null;
   }, [devices]);
@@ -298,32 +125,10 @@ export default function AgentPanel({ devices, historyByNodeId = {} }: AgentPanel
   const nodeSuggestions = useMemo(() => {
     const unique = new Map<string, { id: string; name: string; status: Device['status'] }>();
     for (const device of devices) {
-      unique.set(device.id, {
-        id: device.id,
-        name: device.name,
-        status: device.status,
-      });
+      unique.set(device.id, { id: device.id, name: device.name, status: device.status });
     }
     return Array.from(unique.values()).sort((a, b) => a.id.localeCompare(b.id));
   }, [devices]);
-
-  useEffect(() => {
-    if (historyNodeId) return;
-    if (topFault?.device.id) { setHistoryNodeId(topFault.device.id); return; }
-    if (nodeSuggestions[0]?.id) setHistoryNodeId(nodeSuggestions[0].id);
-  }, [historyNodeId, nodeSuggestions, topFault]);
-
-  // close plus dropdown on outside click
-  useEffect(() => {
-    if (!plusDropdown) return;
-    const handler = (e: MouseEvent) => {
-      if (plusDropdownRef.current && !plusDropdownRef.current.contains(e.target as Node)) {
-        setPlusDropdown(null);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [plusDropdown]);
 
   const quickPrompts = useMemo(() => {
     const prompts = ['Give me a live system overview and top active faults.'];
@@ -391,9 +196,9 @@ export default function AgentPanel({ devices, historyByNodeId = {} }: AgentPanel
   };
 
   const runMessageAction = (action: ChatActionButton) => {
-    if (action.nodeId) {
-      setHistoryNodeId(action.nodeId);
-      if (!action.prompt) setActiveTab('telemetry');
+    if (action.nodeId && !action.prompt) {
+      navigate(`/issues/${action.nodeId}`);
+      return;
     }
     if (action.prompt) sendPrompt(action.prompt);
   };
@@ -419,14 +224,13 @@ export default function AgentPanel({ devices, historyByNodeId = {} }: AgentPanel
     const after = input.slice(pos);
     const pad = before.length > 0 && !before.endsWith(' ') ? ' ' : '';
     setInput(`${before}${pad}@${nodeId} ${after}`);
-    setPlusDropdown(null);
+    setShowNodePicker(false);
     requestAnimationFrame(() => inputRef.current?.focus());
   };
 
   const sendPrompt = (text: string) => {
     const prompt = text.trim();
     if (!prompt || agentChat.isPending) return;
-    setActiveTab('chat');
 
     const userMessage: ConversationMessage = { id: nowId(), role: 'user', content: prompt };
     const nextMessages = [...messages, userMessage];
@@ -491,153 +295,123 @@ export default function AgentPanel({ devices, historyByNodeId = {} }: AgentPanel
   return (
     <div className="flex-1 relative flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto">
-      <div className="flex items-center justify-between gap-4 px-6 py-4">
-        <div>
-          <h1 className="font-display text-sm tracking-tight">Operations Agent</h1>
-          <p className="text-[11px] text-muted-foreground mt-0.5">
-            {topFault ? `${topFault.device.id} - ${topFault.device.name}` : 'Diagnosis, fault history, and approved actions.'}
-          </p>
-        </div>
-        <select
-          value={historyNodeId ?? ''}
-          onChange={(e) => setHistoryNodeId(e.target.value || null)}
-          className="h-8 min-w-[200px] border border-border bg-background px-2 text-[12px] outline-none shrink-0"
-        >
-          {nodeSuggestions.map((node) => (
-            <option key={node.id} value={node.id}>{node.id} - {node.name}</option>
+      <div className="px-6 py-4">
+        <h1 className="font-display text-sm tracking-tight">Operations Agent</h1>
+        <p className="text-[11px] text-muted-foreground mt-0.5">
+          {topFault ? `${topFault.device.id} - ${topFault.device.name}` : 'Diagnosis, fault history, and approved actions.'}
+        </p>
+      </div>
+
+      <div className="container max-w-3xl space-y-4 pb-24">
+        <div className="flex flex-wrap gap-2">
+          {quickPrompts.map((prompt) => (
+            <button
+              key={prompt}
+              onClick={() => sendPrompt(prompt)}
+              disabled={agentChat.isPending}
+              className="border border-border bg-card px-3 py-1.5 text-[12px] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+            >
+              {prompt}
+            </button>
           ))}
-        </select>
-      </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="px-6">
-          <TabsList>
-            <TabsTrigger value="chat">Chat</TabsTrigger>
-            <TabsTrigger value="telemetry">Telemetry</TabsTrigger>
-          </TabsList>
         </div>
 
-        <TabsContent value="chat" className="mt-4">
-          <div className="container max-w-3xl space-y-4 pb-24">
-            <div className="flex flex-wrap gap-2">
-              {quickPrompts.map((prompt) => (
-                <button
-                  key={prompt}
-                  onClick={() => sendPrompt(prompt)}
-                  disabled={agentChat.isPending}
-                  className="border border-border bg-card px-3 py-1.5 text-[12px] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-                >
-                  {prompt}
-                </button>
-              ))}
-            </div>
+        <div ref={chatScrollRef} className="space-y-3">
+          {messages.map((message) => (
+            <div key={message.id} className={`flex w-full ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div
+                className={`w-fit max-w-[78%] rounded-md px-3 py-2 text-[13px] ${
+                  message.role === 'user'
+                    ? 'bg-secondary text-secondary-foreground'
+                    : 'bg-muted text-foreground'
+                }`}
+              >
+                <div className="mb-1 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+                  {message.role === 'assistant' ? <Bot size={11} /> : <Send size={11} />}
+                  {message.role}
+                </div>
+                <MessageMarkdown content={message.content} />
 
-            <div ref={chatScrollRef} className="space-y-3">
-              {messages.map((message) => (
-                <div key={message.id} className={`flex w-full ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div
-                    className={`w-fit max-w-[78%] rounded-md px-3 py-2 text-[13px] ${
-                      message.role === 'user'
-                        ? 'bg-secondary text-secondary-foreground'
-                        : 'bg-muted text-foreground'
-                    }`}
-                  >
-                    <div className="mb-1 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
-                      {message.role === 'assistant' ? <Bot size={11} /> : <Send size={11} />}
-                      {message.role}
-                    </div>
-                    <MessageMarkdown content={message.content} />
-
-                    {message.role === 'assistant' && (
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {buildMessageActions(message.content).map((action) => (
-                          <button
-                            key={`${message.id}-${action.key}`}
-                            type="button"
-                            disabled={agentChat.isPending}
-                            onClick={() => runMessageAction(action)}
-                            className={`border px-2 py-1 text-[11px] transition-colors disabled:opacity-50 ${
-                              action.style === 'primary'
-                                ? 'border-foreground/30 bg-foreground/5 text-foreground hover:border-foreground/60'
-                                : action.style === 'danger'
-                                  ? 'border-status-fault/40 bg-status-fault/10 text-status-fault hover:border-status-fault/70'
-                                  : 'border-border bg-card text-muted-foreground hover:text-foreground'
-                            }`}
-                          >
-                            {action.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                {message.role === 'assistant' && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {buildMessageActions(message.content).map((action) => (
+                      <button
+                        key={`${message.id}-${action.key}`}
+                        type="button"
+                        disabled={agentChat.isPending}
+                        onClick={() => runMessageAction(action)}
+                        className={`border px-2 py-1 text-[11px] transition-colors disabled:opacity-50 ${
+                          action.style === 'primary'
+                            ? 'border-foreground/30 bg-foreground/5 text-foreground hover:border-foreground/60'
+                            : action.style === 'danger'
+                              ? 'border-status-fault/40 bg-status-fault/10 text-status-fault hover:border-status-fault/70'
+                              : 'border-border bg-card text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        {action.label}
+                      </button>
+                    ))}
                   </div>
+                )}
+              </div>
+            </div>
+          ))}
+
+          {agentChat.isPending && (
+            <div className="inline-flex items-center gap-2 px-3 py-2 text-[12px] bg-muted text-muted-foreground">
+              <Loader2 size={13} className="animate-spin" />
+              Agent working...
+            </div>
+          )}
+        </div>
+
+        {latestToolEvents.length > 0 && (
+          <div className="border border-border bg-card p-3">
+            <div className="label-caps mb-2">Latest tool activity</div>
+            <div className="space-y-1.5">
+              {latestToolEvents.map((event, index) => (
+                <div key={`${event.name}-${index}`} className="text-[12px] text-muted-foreground">
+                  <span className="font-medium text-foreground">{event.name}</span>
+                  <span className="mx-1">-</span>
+                  <span className="capitalize">{event.outcome.replace('_', ' ')}</span>
                 </div>
               ))}
-
-              {agentChat.isPending && (
-                <div className="inline-flex items-center gap-2 px-3 py-2 text-[12px] bg-muted text-muted-foreground">
-                  <Loader2 size={13} className="animate-spin" />
-                  Agent working...
-                </div>
-              )}
             </div>
-
-            {latestToolEvents.length > 0 && (
-              <div className="border border-border bg-card p-3">
-                <div className="label-caps mb-2">Latest tool activity</div>
-                <div className="space-y-1.5">
-                  {latestToolEvents.map((event, index) => (
-                    <div key={`${event.name}-${index}`} className="text-[12px] text-muted-foreground">
-                      <span className="font-medium text-foreground">{event.name}</span>
-                      <span className="mx-1">-</span>
-                      <span className="capitalize">{event.outcome.replace('_', ' ')}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {pendingAction && (
-              <div className="border border-status-warning/40 bg-status-warning/10 p-3">
-                <div className="flex items-center gap-2 text-status-warning text-[12px] uppercase tracking-wider font-medium">
-                  <ShieldAlert size={14} />
-                  Approval required
-                </div>
-                <div className="mt-1 text-[13px] text-foreground">{pendingAction.summary}</div>
-                <div className="mt-3 flex items-center gap-2">
-                  <button
-                    onClick={() => decidePendingAction('approve')}
-                    disabled={agentChat.isPending}
-                    className="inline-flex items-center gap-1.5 border border-status-healthy/40 bg-status-healthy/15 px-3 py-1.5 text-[12px] text-status-healthy disabled:opacity-50"
-                  >
-                    <Check size={12} />
-                    Approve
-                  </button>
-                  <button
-                    onClick={() => decidePendingAction('reject')}
-                    disabled={agentChat.isPending}
-                    className="inline-flex items-center gap-1.5 border border-status-fault/40 bg-status-fault/15 px-3 py-1.5 text-[12px] text-status-fault disabled:opacity-50"
-                  >
-                    <X size={12} />
-                    Reject
-                  </button>
-                </div>
-              </div>
-            )}
-
           </div>
-        </TabsContent>
+        )}
 
-        <TabsContent value="telemetry" className="mt-4 px-6">
-          <TelemetryTabContent
-            devices={devices}
-            historyByNodeId={historyByNodeId}
-            selectedNodeId={historyNodeId}
-          />
-        </TabsContent>
-      </Tabs>
+        {pendingAction && (
+          <div className="border border-status-warning/40 bg-status-warning/10 p-3">
+            <div className="flex items-center gap-2 text-status-warning text-[12px] uppercase tracking-wider font-medium">
+              <ShieldAlert size={14} />
+              Approval required
+            </div>
+            <div className="mt-1 text-[13px] text-foreground">{pendingAction.summary}</div>
+            <div className="mt-3 flex items-center gap-2">
+              <button
+                onClick={() => decidePendingAction('approve')}
+                disabled={agentChat.isPending}
+                className="inline-flex items-center gap-1.5 border border-status-healthy/40 bg-status-healthy/15 px-3 py-1.5 text-[12px] text-status-healthy disabled:opacity-50"
+              >
+                <Check size={12} />
+                Approve
+              </button>
+              <button
+                onClick={() => decidePendingAction('reject')}
+                disabled={agentChat.isPending}
+                className="inline-flex items-center gap-1.5 border border-status-fault/40 bg-status-fault/15 px-3 py-1.5 text-[12px] text-status-fault disabled:opacity-50"
+              >
+                <X size={12} />
+                Reject
+              </button>
+            </div>
+          </div>
+        )}
+
+      </div>
       </div>
 
-      {activeTab === 'chat' && <div className="shrink-0 bg-background pb-4 pt-2 px-6">
+      <div className="shrink-0 bg-background pb-4 pt-2 px-6">
         <div className="container max-w-3xl">
           <input
             ref={documentInputRef}
@@ -731,6 +505,27 @@ export default function AgentPanel({ devices, historyByNodeId = {} }: AgentPanel
                 </div>
               </div>
             )}
+
+            {showNodePicker && (
+              <div className="absolute bottom-full left-0 mb-1 border border-border bg-card min-w-[240px] max-h-[200px] overflow-y-auto shadow-md z-50">
+                {nodeSuggestions.map((node) => (
+                  <button
+                    key={node.id}
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      attachNode(node.id);
+                    }}
+                    className="w-full text-left px-3 py-1.5 text-[12px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  >
+                    <span className="font-medium text-foreground">{node.id}</span>
+                    <span className="mx-1.5 text-border">-</span>
+                    <span>{node.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
             <form
               className="flex items-center gap-2"
               onSubmit={(event) => {
@@ -738,56 +533,29 @@ export default function AgentPanel({ devices, historyByNodeId = {} }: AgentPanel
                 sendPrompt(input);
               }}
             >
-              <div className="relative" ref={plusDropdownRef}>
-                <button
-                  type="button"
-                  onClick={() => setPlusDropdown((prev) => prev ? null : 'menu')}
-                  className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <Plus size={16} />
-                </button>
-
-                {plusDropdown === 'menu' && (
-                  <div className="absolute bottom-full left-0 mb-2 border border-border bg-card min-w-[200px] shadow-md z-50">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPlusDropdown(null);
-                        documentInputRef.current?.click();
-                      }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                    >
-                      <FileText size={12} />
-                      Add a document
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPlusDropdown('nodes')}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors border-t border-border"
-                    >
-                      <Zap size={12} />
-                      Attach a node
-                    </button>
-                  </div>
-                )}
-
-                {plusDropdown === 'nodes' && (
-                  <div className="absolute bottom-full left-0 mb-2 border border-border bg-card min-w-[240px] max-h-[200px] overflow-y-auto shadow-md z-50">
-                    {nodeSuggestions.map((node) => (
-                      <button
-                        key={node.id}
-                        type="button"
-                        onClick={() => attachNode(node.id)}
-                        className="w-full text-left px-3 py-1.5 text-[12px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                      >
-                        <span className="font-medium text-foreground">{node.id}</span>
-                        <span className="mx-1.5 text-border">-</span>
-                        <span>{node.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button type="button" className="p-1.5 text-muted-foreground hover:text-foreground transition-colors">
+                    <Plus size={16} />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="top" align="start" className="min-w-[200px]">
+                  <DropdownMenuItem
+                    className="text-[12px] cursor-pointer gap-2"
+                    onSelect={() => documentInputRef.current?.click()}
+                  >
+                    <FileText size={12} />
+                    Add a document
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-[12px] cursor-pointer gap-2"
+                    onSelect={() => setShowNodePicker(true)}
+                  >
+                    <Zap size={12} />
+                    Attach a node
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <input
                 ref={inputRef}
                 value={input}
@@ -798,7 +566,10 @@ export default function AgentPanel({ devices, historyByNodeId = {} }: AgentPanel
                 onClick={(event) => {
                   setCaretPosition(event.currentTarget.selectionStart ?? event.currentTarget.value.length);
                 }}
-                onBlur={() => setCaretPosition(0)}
+                onBlur={() => {
+                  setCaretPosition(0);
+                  setTimeout(() => setShowNodePicker(false), 150);
+                }}
                 onKeyUp={(event) => {
                   setCaretPosition(event.currentTarget.selectionStart ?? event.currentTarget.value.length);
                 }}
@@ -834,7 +605,7 @@ export default function AgentPanel({ devices, historyByNodeId = {} }: AgentPanel
             </form>
           </div>
         </div>
-      </div>}
+      </div>
     </div>
   );
 }

@@ -1,22 +1,13 @@
 import { useState } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
 import AppSidebar from '@/components/AppSidebar';
-import DatacenterMap from '@/components/DatacenterMap';
-import DeviceDetailPanel from '@/components/DeviceDetailPanel';
-import AlertDashboard from '@/components/AlertDashboard';
-import AgentPanel from '@/components/AgentPanel';
 import { useFacilityData } from '@/hooks/useFacilityData';
+import { type FacilityContext } from '@/types/facility';
 
-export default function Index() {
-  const [activeView, setActiveView] = useState<'map' | 'issues' | 'agent'>('map');
-  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
+export default function Layout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const location = useLocation();
   const { ahuUnits, buildingStats, devices, error, historyByNodeId, isLoading, isError, nodePositions } = useFacilityData();
-  const selectedDevice = devices.find(device => device.id === selectedDeviceId) ?? null;
-
-  const handleDeviceSelect = (deviceId: string) => {
-    setSelectedDeviceId(deviceId);
-    setActiveView('map');
-  };
 
   if (isLoading) {
     return (
@@ -42,36 +33,23 @@ export default function Index() {
     );
   }
 
+  const activeView = location.pathname.startsWith('/issues') ? 'issues'
+    : location.pathname.startsWith('/agent') ? 'agent'
+    : 'map';
+
+  const ctx: FacilityContext = { ahuUnits, buildingStats, devices, historyByNodeId, nodePositions };
+
   return (
     <div className="flex h-screen overflow-hidden">
       <AppSidebar
         activeView={activeView}
-        onViewChange={setActiveView}
         buildingStats={buildingStats}
         collapsed={sidebarCollapsed}
         onToggle={() => setSidebarCollapsed(c => !c)}
       />
-
       <div className="relative flex flex-1 overflow-hidden">
-        {activeView === 'map' && (
-          <DatacenterMap
-            ahuUnits={ahuUnits}
-            devices={devices}
-            nodePositions={nodePositions}
-            onDeviceSelect={(device) => setSelectedDeviceId(device.id)}
-            selectedDeviceId={selectedDeviceId}
-          />
-        )}
-        {activeView === 'issues' && (
-          <AlertDashboard devices={devices} onNavigateToDevice={(device) => handleDeviceSelect(device.id)} />
-        )}
-        {activeView === 'agent' && <AgentPanel devices={devices} historyByNodeId={historyByNodeId} />}
-
-        {activeView === 'map' && (
-          <DeviceDetailPanel device={selectedDevice} onClose={() => setSelectedDeviceId(null)} />
-        )}
+        <Outlet context={ctx} />
       </div>
-
       <div className="fixed top-0 left-0 right-0 h-0.5 z-50 bg-brand" />
     </div>
   );
