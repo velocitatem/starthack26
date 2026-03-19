@@ -62,6 +62,10 @@
     --font-body: 'Geist Mono', ui-monospace, monospace;
 
     --ease-swift: cubic-bezier(0.2, 0, 0, 1);
+
+    --map-struct: 210 10% 55%;
+    --map-aisle: 210 10% 82%;
+    --map-floor: 220 8% 94%;
   }
 
   .dark {
@@ -121,6 +125,10 @@
     --font-body: 'Geist Mono', ui-monospace, monospace;
 
     --ease-swift: cubic-bezier(0.2, 0, 0, 1);
+
+    --map-struct: 220 8% 55%;
+    --map-aisle: 225 12% 12%;
+    --map-floor: 225 12% 8%;
   }
 }
 

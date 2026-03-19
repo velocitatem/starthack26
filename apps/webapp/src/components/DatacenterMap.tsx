@@ -760,8 +760,8 @@ const DatacenterBase = () => (
         y="0"
         width="30"
         height="23"
-        fill="hsl(var(--card))"
-        stroke="hsl(var(--foreground) / 0.45)"
+        fill="hsl(var(--map-floor))"
+        stroke="hsl(var(--foreground) / 0.5)"
         strokeWidth="1.5"
       />
 
@@ -782,83 +782,82 @@ const DatacenterBase = () => (
         <path
           d="M 40 0 L 0 0 0 40"
           fill="none"
-          stroke="hsl(var(--border))"
+          stroke="hsl(var(--foreground) / 0.07)"
           strokeWidth="0.75"
-          opacity="0.18"
         />
       </pattern>
 
       <linearGradient id="datacenter-shell" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="hsl(var(--card))" />
-        <stop offset="100%" stopColor="hsl(var(--secondary) / 0.8)" />
+        <stop offset="0%" stopColor="hsl(var(--map-floor))" />
+        <stop offset="100%" stopColor="hsl(var(--map-aisle) / 0.85)" />
       </linearGradient>
     </defs>
 
     <rect width="1200" height="700" fill="url(#datacenter-grid)" />
-    <rect width="1200" height="700" fill="hsl(var(--background))" opacity="0.7" />
-    <rect x="40" y="40" width="1120" height="620" fill="url(#datacenter-shell)" stroke="hsl(var(--foreground) / 0.5)" strokeWidth="6" />
-    <rect x="50" y="50" width="1100" height="600" fill="none" stroke="hsl(var(--foreground) / 0.25)" strokeWidth="1.5" />
+    <rect width="1200" height="700" fill="hsl(var(--background) / 0.45)" />
+    <rect x="40" y="40" width="1120" height="620" fill="url(#datacenter-shell)" stroke="hsl(var(--foreground) / 0.55)" strokeWidth="6" />
+    <rect x="50" y="50" width="1100" height="600" fill="none" stroke="hsl(var(--foreground) / 0.3)" strokeWidth="1.5" />
 
-    <rect x="35" y="480" width="20" height="20" fill="hsl(var(--muted))" stroke="hsl(var(--foreground) / 0.5)" strokeWidth="1.5" />
-    <rect x="1145" y="480" width="20" height="20" fill="hsl(var(--muted))" stroke="hsl(var(--foreground) / 0.5)" strokeWidth="1.5" />
-    <rect x="400" y="645" width="20" height="20" fill="hsl(var(--muted))" stroke="hsl(var(--foreground) / 0.5)" strokeWidth="1.5" />
-    <rect x="750" y="645" width="20" height="20" fill="hsl(var(--muted))" stroke="hsl(var(--foreground) / 0.5)" strokeWidth="1.5" />
+    <rect x="35" y="480" width="20" height="20" fill="hsl(var(--map-aisle))" stroke="hsl(var(--foreground) / 0.55)" strokeWidth="1.5" />
+    <rect x="1145" y="480" width="20" height="20" fill="hsl(var(--map-aisle))" stroke="hsl(var(--foreground) / 0.55)" strokeWidth="1.5" />
+    <rect x="400" y="645" width="20" height="20" fill="hsl(var(--map-aisle))" stroke="hsl(var(--foreground) / 0.55)" strokeWidth="1.5" />
+    <rect x="750" y="645" width="20" height="20" fill="hsl(var(--map-aisle))" stroke="hsl(var(--foreground) / 0.55)" strokeWidth="1.5" />
 
-    <rect x="180" y="220" width="40" height="250" fill="hsl(var(--secondary) / 0.85)" />
+    <rect x="180" y="220" width="40" height="250" fill="hsl(var(--map-aisle))" />
     <use href="#datacenter-rack-col" x="150" y="220" />
     <use href="#datacenter-rack-col" x="220" y="220" />
 
-    <rect x="330" y="220" width="40" height="250" fill="hsl(var(--muted-foreground) / 0.5)" />
-    <rect x="325" y="470" width="50" height="20" fill="hsl(var(--muted-foreground) / 0.5)" stroke="hsl(var(--foreground) / 0.4)" strokeWidth="1.5" />
+    <rect x="330" y="220" width="40" height="250" fill="hsl(var(--map-struct) / 0.6)" />
+    <rect x="325" y="470" width="50" height="20" fill="hsl(var(--map-struct) / 0.6)" stroke="hsl(var(--foreground) / 0.45)" strokeWidth="1.5" />
     <use href="#datacenter-rack-col" x="300" y="220" />
     <use href="#datacenter-rack-col" x="370" y="220" />
 
-    <rect x="480" y="220" width="40" height="250" fill="hsl(var(--secondary) / 0.85)" />
+    <rect x="480" y="220" width="40" height="250" fill="hsl(var(--map-aisle))" />
     <use href="#datacenter-rack-col" x="450" y="220" />
     <use href="#datacenter-rack-col" x="520" y="220" />
 
-    <rect x="630" y="220" width="40" height="250" fill="hsl(var(--muted-foreground) / 0.5)" />
-    <rect x="625" y="470" width="50" height="20" fill="hsl(var(--muted-foreground) / 0.5)" stroke="hsl(var(--foreground) / 0.4)" strokeWidth="1.5" />
+    <rect x="630" y="220" width="40" height="250" fill="hsl(var(--map-struct) / 0.6)" />
+    <rect x="625" y="470" width="50" height="20" fill="hsl(var(--map-struct) / 0.6)" stroke="hsl(var(--foreground) / 0.45)" strokeWidth="1.5" />
     <use href="#datacenter-rack-col" x="600" y="220" />
     <use href="#datacenter-rack-col" x="670" y="220" />
 
-    <rect x="780" y="220" width="40" height="250" fill="hsl(var(--secondary) / 0.85)" />
+    <rect x="780" y="220" width="40" height="250" fill="hsl(var(--map-aisle))" />
     <use href="#datacenter-rack-col" x="750" y="220" />
     <use href="#datacenter-rack-col" x="820" y="220" />
 
-    <rect x="930" y="220" width="40" height="250" fill="hsl(var(--muted-foreground) / 0.5)" />
-    <rect x="925" y="470" width="50" height="20" fill="hsl(var(--muted-foreground) / 0.5)" stroke="hsl(var(--foreground) / 0.4)" strokeWidth="1.5" />
+    <rect x="930" y="220" width="40" height="250" fill="hsl(var(--map-struct) / 0.6)" />
+    <rect x="925" y="470" width="50" height="20" fill="hsl(var(--map-struct) / 0.6)" stroke="hsl(var(--foreground) / 0.45)" strokeWidth="1.5" />
     <use href="#datacenter-rack-col" x="900" y="220" />
     <use href="#datacenter-rack-col" x="970" y="220" />
 
     <path
       d="M 300 90 L 1150 90 L 1150 125 L 965 125 L 965 180 L 935 180 L 935 125 L 665 125 L 665 180 L 635 180 L 635 125 L 365 125 L 365 180 L 335 180 L 335 125 L 300 125 Z"
-      fill="hsl(var(--muted-foreground) / 0.38)"
-      stroke="hsl(var(--foreground) / 0.55)"
+      fill="hsl(var(--map-struct) / 0.5)"
+      stroke="hsl(var(--foreground) / 0.6)"
       strokeWidth="1.5"
     />
-    <polygon points="335,180 365,180 375,195 325,195" fill="hsl(var(--muted-foreground) / 0.38)" stroke="hsl(var(--foreground) / 0.55)" strokeWidth="1.5" />
-    <polygon points="635,180 665,180 675,195 625,195" fill="hsl(var(--muted-foreground) / 0.38)" stroke="hsl(var(--foreground) / 0.55)" strokeWidth="1.5" />
-    <polygon points="935,180 965,180 975,195 925,195" fill="hsl(var(--muted-foreground) / 0.38)" stroke="hsl(var(--foreground) / 0.55)" strokeWidth="1.5" />
-    <polygon points="1150,90 1150,125 1170,135 1170,80" fill="hsl(var(--muted-foreground) / 0.38)" stroke="hsl(var(--foreground) / 0.55)" strokeWidth="1.5" />
+    <polygon points="335,180 365,180 375,195 325,195" fill="hsl(var(--map-struct) / 0.5)" stroke="hsl(var(--foreground) / 0.6)" strokeWidth="1.5" />
+    <polygon points="635,180 665,180 675,195 625,195" fill="hsl(var(--map-struct) / 0.5)" stroke="hsl(var(--foreground) / 0.6)" strokeWidth="1.5" />
+    <polygon points="935,180 965,180 975,195 925,195" fill="hsl(var(--map-struct) / 0.5)" stroke="hsl(var(--foreground) / 0.6)" strokeWidth="1.5" />
+    <polygon points="1150,90 1150,125 1170,135 1170,80" fill="hsl(var(--map-struct) / 0.5)" stroke="hsl(var(--foreground) / 0.6)" strokeWidth="1.5" />
 
-    <rect x="335" y="145" width="30" height="20" fill="none" stroke="hsl(var(--foreground) / 0.65)" strokeWidth="1.5" />
-    <rect x="635" y="145" width="30" height="20" fill="none" stroke="hsl(var(--foreground) / 0.65)" strokeWidth="1.5" />
-    <rect x="935" y="145" width="30" height="20" fill="none" stroke="hsl(var(--foreground) / 0.65)" strokeWidth="1.5" />
-    <rect x="1080" y="90" width="20" height="35" fill="none" stroke="hsl(var(--foreground) / 0.65)" strokeWidth="1.5" />
+    <rect x="335" y="145" width="30" height="20" fill="none" stroke="hsl(var(--foreground) / 0.7)" strokeWidth="1.5" />
+    <rect x="635" y="145" width="30" height="20" fill="none" stroke="hsl(var(--foreground) / 0.7)" strokeWidth="1.5" />
+    <rect x="935" y="145" width="30" height="20" fill="none" stroke="hsl(var(--foreground) / 0.7)" strokeWidth="1.5" />
+    <rect x="1080" y="90" width="20" height="35" fill="none" stroke="hsl(var(--foreground) / 0.7)" strokeWidth="1.5" />
 
     <path
       d="M 100 550 L 185 550 L 185 490 L 215 490 L 215 550 L 485 550 L 485 490 L 515 490 L 515 550 L 785 550 L 785 490 L 815 490 L 815 550 L 840 550 L 840 585 L 20 585 L 20 550 Z"
-      fill="hsl(var(--muted-foreground) / 0.38)"
-      stroke="hsl(var(--foreground) / 0.55)"
+      fill="hsl(var(--map-struct) / 0.5)"
+      stroke="hsl(var(--foreground) / 0.6)"
       strokeWidth="1.5"
     />
-    <polygon points="20,550 20,585 10,595 10,540" fill="hsl(var(--muted-foreground) / 0.38)" stroke="hsl(var(--foreground) / 0.55)" strokeWidth="1.5" />
+    <polygon points="20,550 20,585 10,595 10,540" fill="hsl(var(--map-struct) / 0.5)" stroke="hsl(var(--foreground) / 0.6)" strokeWidth="1.5" />
 
-    <rect x="185" y="510" width="30" height="20" fill="none" stroke="hsl(var(--foreground) / 0.65)" strokeWidth="1.5" />
-    <rect x="485" y="510" width="30" height="20" fill="none" stroke="hsl(var(--foreground) / 0.65)" strokeWidth="1.5" />
-    <rect x="785" y="510" width="30" height="20" fill="none" stroke="hsl(var(--foreground) / 0.65)" strokeWidth="1.5" />
-    <rect x="60" y="550" width="20" height="35" fill="none" stroke="hsl(var(--foreground) / 0.65)" strokeWidth="1.5" />
+    <rect x="185" y="510" width="30" height="20" fill="none" stroke="hsl(var(--foreground) / 0.7)" strokeWidth="1.5" />
+    <rect x="485" y="510" width="30" height="20" fill="none" stroke="hsl(var(--foreground) / 0.7)" strokeWidth="1.5" />
+    <rect x="785" y="510" width="30" height="20" fill="none" stroke="hsl(var(--foreground) / 0.7)" strokeWidth="1.5" />
+    <rect x="60" y="550" width="20" height="35" fill="none" stroke="hsl(var(--foreground) / 0.7)" strokeWidth="1.5" />
 
     <text x="78" y="615" fill={`hsl(${supplyPalette})`} fontSize="12" fontFamily="var(--font-display)">
       INTAKE
