@@ -1,19 +1,18 @@
-import { useParams, useOutletContext, Link } from 'react-router-dom';
+import { useParams, useOutletContext, Link, useNavigate } from 'react-router-dom';
 import PageHeader from '@/components/PageHeader';
 import {
   Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage,
 } from '@/components/ui/breadcrumb';
 import { type FacilityContext } from '@/types/facility';
-import { useResolveFault } from '@/hooks/useFacilityData';
 import { useNodeFaultHistory } from '@/hooks/useNodeFaultHistory';
+import { buildAgentRouteStateForIssue } from '@/lib/agentNavigation';
 import DeviceDashboard from '@/components/DeviceDashboardV3';
 
 export default function DeviceDashboardPage() {
   const { deviceId } = useParams<{ deviceId: string }>();
   const { devices, historyByNodeId } = useOutletContext<FacilityContext>();
   const device = devices.find(d => d.id === deviceId);
-
-  const { mutate: resolve, pendingFaultId } = useResolveFault();
+  const navigate = useNavigate();
   const historyQuery = useNodeFaultHistory(deviceId ?? null, 25);
 
   return (
@@ -46,8 +45,7 @@ export default function DeviceDashboardPage() {
             devices={devices}
             historyByNodeId={historyByNodeId}
             historyQuery={historyQuery}
-            pendingFaultId={pendingFaultId}
-            resolve={resolve}
+            onOpenIssueResult={(selection) => navigate('/agent', { state: buildAgentRouteStateForIssue(selection) })}
           />
         ) : (
           <div className="text-[13px] text-muted-foreground">No device found with ID <code>{deviceId}</code>.</div>

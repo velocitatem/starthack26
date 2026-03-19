@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import PageHeader from '@/components/PageHeader';
+import IssueResolveButton from '@/components/IssueResolveButton';
 
 interface AlertDashboardProps {
   devices: Device[];
@@ -169,17 +170,12 @@ export default function AlertDashboard({ devices, onNavigateToDevice, onOpenIssu
                     </span>
                   </div>
                   <div className="flex w-20 justify-end">
-                    <button
-                      type="button"
+                    <IssueResolveButton
                       onClick={(event) => {
                         event.stopPropagation();
                         onOpenIssueResult({ device: alert.device, fault: alert.fault });
                       }}
-                      className="flex items-center gap-1 border border-border px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
-                    >
-                      <Zap size={10} />
-                      Resolve
-                    </button>
+                    />
                   </div>
                 </div>
 

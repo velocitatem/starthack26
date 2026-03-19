@@ -88,6 +88,41 @@ def test_codex_agent_requires_and_applies_pending_approval(monkeypatch):
     assert final_faults == initial_faults - 1
 
 
+def test_codex_agent_escalation_pending_action_uses_configured_number(monkeypatch):
+    _reset_memory_state(monkeypatch, build_seed_state())
+    monkeypatch.setenv("ESCALATION_PHONE_NUMBER", "+41790001122")
+
+    def _fake_openai_request(_input_payload):
+        return {
+            "model": "gpt-5.4",
+            "output": [
+                {
+                    "type": "function_call",
+                    "call_id": "call_test_escalate",
+                    "name": "escalate_fault",
+                    "arguments": '{"faultId":"fault-seed-0004","engineerName":"On-Site Engineer"}',
+                }
+            ],
+        }
+
+    monkeypatch.setattr(codex_agent, "_openai_request", _fake_openai_request)
+
+    response = codex_agent.run_codex_agent_chat(
+        {
+            "messages": [
+                {"role": "user", "content": "Call the on-site engineer about fault fault-seed-0004"}
+            ],
+            "actor": "test-user",
+        }
+    )
+
+    pending = response["pendingAction"]
+    assert pending is not None
+    assert pending["name"] == "escalate_fault"
+    assert pending["summary"] == "Call +41790001122 about fault `fault-seed-0004`"
+    assert "+41790001122" in response["reply"]
+
+
 def test_system_prompt_includes_uploaded_document_context_with_truncation(monkeypatch):
     monkeypatch.setattr(
         codex_agent,

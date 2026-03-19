@@ -5,16 +5,16 @@ import {
   Zap,
   Clock,
   Wrench,
-  Check,
   Loader2,
   ChevronDown,
   Activity,
   ExternalLink,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { type Device, type NodeFaultHistoryEntry } from '@/types/facility';
-import { useResolveFault } from '@/hooks/useFacilityData';
+import { buildAgentRouteStateForIssue } from '@/lib/agentNavigation';
 import { useNodeFaultHistory } from '@/hooks/useNodeFaultHistory';
+import IssueResolveButton from '@/components/IssueResolveButton';
 import Sparkline from './Sparkline';
 
 interface DeviceDetailPanelProps {
@@ -66,7 +66,7 @@ const formatTimestamp = (value: string) => {
 
 export default function DeviceDetailPanel({ device, mode = 'pinned', onClose }: DeviceDetailPanelProps) {
   const isPeek = mode === 'peek';
-  const { mutate: resolve, pendingFaultId } = useResolveFault();
+  const navigate = useNavigate();
   const historyQuery = useNodeFaultHistory(device?.id ?? null, 10);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const currentDeviceId = device?.id ?? null;
@@ -188,9 +188,8 @@ export default function DeviceDetailPanel({ device, mode = 'pinned', onClose }: 
                   <div className="label-caps mb-3">Active Faults ({device.faults.length})</div>
                   <div className="space-y-3">
                     {device.faults.map((fault) => {
-                      const isPending = pendingFaultId === fault.id;
                       return (
-                        <div key={fault.id} className={`border border-border bg-card p-3 fault-card-accent ${isPending ? 'opacity-50' : ''}`}>
+                        <div key={fault.id} className="border border-border bg-card p-3 fault-card-accent">
                           <div className="text-[13px] font-medium">{fault.type}</div>
                           <span className={`mt-1.5 inline-block border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider ${severityBadge[fault.severity]}`}>
                             {fault.severity}
@@ -208,14 +207,11 @@ export default function DeviceDetailPanel({ device, mode = 'pinned', onClose }: 
                                 <span className="flex items-center gap-1"><Zap size={10} />{fault.energyWaste}</span>
                                 <span className="flex items-center gap-1"><Clock size={10} />{new Date(fault.detectedAt).toLocaleDateString()}</span>
                               </div>
-                              <button
-                                disabled={isPending}
-                                onClick={() => resolve(fault.id)}
-                                className="flex items-center gap-1 border border-border px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-                              >
-                                {isPending ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
-                                {isPending ? 'Resolving...' : 'Resolve'}
-                              </button>
+                              <IssueResolveButton
+                                onClick={() => navigate('/agent', {
+                                  state: buildAgentRouteStateForIssue({ device, fault }),
+                                })}
+                              />
                             </div>
                           </div>
                         </div>

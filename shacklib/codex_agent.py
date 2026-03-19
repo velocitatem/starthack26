@@ -398,7 +398,7 @@ def _pending_action_summary(name: str, arguments: dict[str, Any]) -> str:
         return f"Resolve fault `{fault_id}`"
     if name == "escalate_fault":
         fault_id = str(arguments.get("faultId") or "unknown")
-        to_number = str(arguments.get("toNumber") or "unknown")
+        to_number = _escalation_phone_number() or "the configured escalation number"
         return f"Call {to_number} about fault `{fault_id}`"
     return f"Execute `{name}`"
 

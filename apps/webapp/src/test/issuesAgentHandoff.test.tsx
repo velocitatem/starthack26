@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Outlet, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import AgentPage from '@/pages/AgentPage';
+import DeviceDetailPanel from '@/components/DeviceDetailPanel';
+import DeviceDashboardPage from '@/pages/DeviceDashboardPage';
 import IssuesPage from '@/pages/IssuesPage';
 import { buildAgentRouteStateForIssue, buildIssueResultPrompt } from '@/lib/agentNavigation';
 import { type Device, type FacilityContext } from '@/types/facility';
@@ -35,6 +37,20 @@ vi.mock('@/hooks/useBuildingDocuments', () => ({
   useDeleteDocument: () => ({
     isPending: false,
     mutate: deleteMutateMock,
+  }),
+}));
+
+vi.mock('@/hooks/useNodeFaultHistory', () => ({
+  useNodeFaultHistory: () => ({
+    data: {
+      nodeId: 'BEL-VNT-003',
+      nodeLabel: 'Supply Damper 03',
+      totalFaults: 1,
+      openFaults: 1,
+      faultHistory: [],
+    },
+    isLoading: false,
+    error: null,
   }),
 }));
 
@@ -183,6 +199,49 @@ describe('issues to agent handoff', () => {
     fireEvent.click(screen.getByText('Actuator stall'));
 
     expect(await screen.findByTestId('device-page')).toHaveTextContent(device.id);
+  });
+
+  it('uses the same agent handoff when Resolve is clicked from the device overview', async () => {
+    render(
+      <MemoryRouter initialEntries={[`/devices/${device.id}`]}>
+        <Routes>
+          <Route element={withOutletContext()}>
+            <Route path="/devices/:deviceId" element={<DeviceDashboardPage />} />
+            <Route path="/agent" element={<AgentStateProbe />} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Resolve' }));
+
+    const stateNode = await screen.findByTestId('agent-state');
+    expect(stateNode.textContent).toBe(JSON.stringify(buildAgentRouteStateForIssue({
+      device,
+      fault: device.faults[0],
+    })));
+  });
+
+  it('uses the same agent handoff when Resolve is clicked from the map sidebar', async () => {
+    render(
+      <MemoryRouter initialEntries={['/map']}>
+        <Routes>
+          <Route
+            path="/map"
+            element={<DeviceDetailPanel device={device} mode="pinned" onClose={() => undefined} />}
+          />
+          <Route path="/agent" element={<AgentStateProbe />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Resolve' }));
+
+    const stateNode = await screen.findByTestId('agent-state');
+    expect(stateNode.textContent).toBe(JSON.stringify(buildAgentRouteStateForIssue({
+      device,
+      fault: device.faults[0],
+    })));
   });
 
   it('auto-submits the agent message from route state and clears the route state', async () => {

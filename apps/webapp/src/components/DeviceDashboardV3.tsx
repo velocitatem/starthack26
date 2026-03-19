@@ -1,18 +1,18 @@
 import type { UseQueryResult } from '@tanstack/react-query';
 import {
-  Zap, Clock, Wrench, Check, Loader2, Activity, AlertTriangle, Shield, Server,
+  Zap, Clock, Wrench, Loader2, Activity, AlertTriangle, Shield, Server,
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import DeviceTelemetry from '@/components/TelemetryCharts';
-import type { Device, NodeFaultHistoryResponse, TelemetryPoint } from '@/types/facility';
+import IssueResolveButton from '@/components/IssueResolveButton';
+import type { Device, IssueAlertSelection, NodeFaultHistoryResponse, TelemetryPoint } from '@/types/facility';
 
 export interface DeviceDashboardProps {
   device: Device;
   devices: Device[];
   historyByNodeId: Record<string, Record<string, TelemetryPoint[]>>;
   historyQuery: UseQueryResult<NodeFaultHistoryResponse>;
-  pendingFaultId: string | null;
-  resolve: (faultId: string) => void;
+  onOpenIssueResult: (selection: IssueAlertSelection) => void;
 }
 
 const severityBadge: Record<string, string> = {
@@ -29,7 +29,7 @@ const fmtTs = (v: string) => {
 };
 
 export default function DeviceDashboard({
-  device, devices, historyByNodeId, historyQuery, pendingFaultId, resolve,
+  device, devices, historyByNodeId, historyQuery, onOpenIssueResult,
 }: DeviceDashboardProps) {
   const openFaults = historyQuery.data?.openFaults ?? device.faults.length;
   const totalFaults = historyQuery.data?.totalFaults ?? 0;
@@ -79,9 +79,8 @@ export default function DeviceDashboard({
           {device.faults.length > 0 ? (
             <div className="space-y-3">
               {device.faults.map(f => {
-                const pending = pendingFaultId === f.id;
                 return (
-                  <div key={f.id} className={`border border-border bg-card p-4 fault-card-accent ${pending ? 'opacity-50' : ''}`}>
+                  <div key={f.id} className="border border-border bg-card p-4 fault-card-accent">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
@@ -99,10 +98,7 @@ export default function DeviceDashboard({
                           <span>{f.estimatedImpact}</span>
                         </div>
                       </div>
-                      <button disabled={pending} onClick={() => resolve(f.id)} className="flex items-center gap-1 border border-border px-2 py-1.5 text-[11px] text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50">
-                        {pending ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
-                        {pending ? 'Resolving...' : 'Resolve'}
-                      </button>
+                      <IssueResolveButton onClick={() => onOpenIssueResult({ device, fault: f })} />
                     </div>
                   </div>
                 );
